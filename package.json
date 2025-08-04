@@ -1,0 +1,98 @@
+{
+  "name": "winhub",
+  "version": "1.0.0",
+  "description": "Find and install any Windows program instantly",
+  "main": "dist/main/main.js",
+  "scripts": {
+    "build": "npm run build:main && npm run build:renderer",
+    "build:main": "tsc -p tsconfig.main.json",
+    "build:renderer": "webpack --mode=production",
+    "dev": "npm run build:main && electron .",
+    "dev:renderer": "webpack serve --mode=development",
+    "start": "electron .",
+    "pack": "electron-builder",
+    "standalone": "npm run build && electron-builder",
+    "package": "npm run build && npx electron-packager . WinHub --platform=win32 --arch=x64 --out=release --overwrite --icon=assets/icon.ico",
+    "portable": "npm run build && electron-builder --win portable",
+    "clean": "rimraf dist"
+  },
+  "keywords": [
+    "electron",
+    "windows",
+    "winget",
+    "installer",
+    "desktop"
+  ],
+  "author": "Barandev",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.19.9",
+    "@types/node-fetch": "^2.6.13",
+    "@types/react": "^18.3.23",
+    "@types/react-dom": "^18.3.7",
+    "autoprefixer": "^10.4.21",
+    "css-loader": "^6.11.0",
+    "electron": "^25.9.8",
+    "electron-builder": "^24.13.3",
+    "electron-installer-windows": "^3.0.0",
+    "electron-packager": "^17.1.2",
+    "html-webpack-plugin": "^5.6.3",
+    "postcss": "^8.5.6",
+    "postcss-loader": "^7.3.4",
+    "rimraf": "^5.0.10",
+    "style-loader": "^3.3.4",
+    "tailwindcss": "^3.4.17",
+    "ts-loader": "^9.5.2",
+    "typescript": "^5.9.2",
+    "webpack": "^5.101.0",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^4.15.2"
+  },
+  "dependencies": {
+    "-": "^0.0.1",
+    "node-fetch": "^2.7.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "build": {
+    "appId": "com.winhub.app",
+    "productName": "WinHub",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.ico",
+      "verifyUpdateCodeSignature": false,
+      "sign": null,
+      "signingHashAlgorithms": [],
+      "certificateFile": null,
+      "certificatePassword": null
+    },
+    "portable": {
+      "artifactName": "WinHub-Standalone.exe"
+    },
+    "afterSign": null,
+    "afterAllArtifactBuild": null,
+    "compression": "maximum",
+    "nodeGypRebuild": false,
+    "buildDependenciesFromSource": false,
+    "electronDownload": {
+      "cache": ".electron"
+    },
+    "forceCodeSigning": false,
+    "electronUpdaterCompatibility": ">=2.16"
+  }
+}

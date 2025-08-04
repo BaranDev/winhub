@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://api.winget.run https://customsearch.googleapis.com; font-src 'self';"
+    />
+    <meta
+      name="description"
+      content="WinHub - Find and install any Windows program instantly"
+    />
+    <meta
+      name="keywords"
+      content="windows, software, install, winget, applications, programs"
+    />
+    <meta name="author" content="WinHub Team" />
+
+    <!-- Prevent zooming on mobile-like displays -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+
+    <!-- Favicon (optional - would need icon files) -->
+    <!-- <link rel="icon" type="image/x-icon" href="/favicon.ico"> -->
+
+    <title>WinHub - Find and install any Windows program instantly</title>
+
+    <!-- Preload important resources -->
+    <link rel="preconnect" href="https://api.winget.run" />
+
+    <!-- Critical CSS will be injected by webpack -->
+    <style>
+      /* Critical styles for initial load */
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f9fafb;
+        color: #111827;
+      }
+
+      /* Loading spinner for initial render */
+      .initial-loading {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        font-size: 14px;
+        color: #6b7280;
+      }
+
+      .initial-spinner {
+        width: 32px;
+        height: 32px;
+        border: 2px solid #e5e7eb;
+        border-top: 2px solid #3b82f6;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 16px;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* Hide loading when React takes over */
+      .loaded .initial-loading {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Main app container -->
+    <div id="root">
+      <!-- Initial loading indicator -->
+      <div class="initial-loading">
+        <div class="initial-spinner"></div>
+        <div>Loading WinHub...</div>
+      </div>
+    </div>
+
+    <!-- Noscript fallback -->
+    <noscript>
+      <div
+        style="
+          text-align: center;
+          padding: 50px;
+          font-family: Arial, sans-serif;
+        "
+      >
+        <h1>WinHub</h1>
+        <p>This application requires JavaScript to run.</p>
+        <p>Please enable JavaScript in your browser and try again.</p>
+      </div>
+    </noscript>
+
+    <!-- Application scripts will be injected by webpack -->
+
+    <script>
+      // Mark as loaded when DOM is ready
+      document.addEventListener("DOMContentLoaded", function () {
+        document.body.classList.add("loaded");
+      });
+
+      // Basic error handling before React loads
+      window.addEventListener("error", function (event) {
+        console.error("Application error:", event.error);
+      });
+
+      // Handle promise rejections before React error boundaries
+      window.addEventListener("unhandledrejection", function (event) {
+        console.error("Unhandled promise rejection:", event.reason);
+      });
+    </script>
+  </body>
+</html>
