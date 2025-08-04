@@ -20,6 +20,22 @@ Think of WinHub as your personal software concierge. Instead of playing Russian 
 - **Actually Good Design**: Dark theme that won't burn your retinas
 - **Portable Magic**: Download, unzip, run. No installation drama
 
+### PC Migration in Action
+
+<div align="center">
+    <img src="demos/Demo - Export.gif" alt="WinHub PC Migration export demo showing how to export installed applications list for transfer to another computer" width="600">
+    <br>
+    <em>Export your app list from your current machine</em>
+</div>
+
+<br>
+
+<div align="center">
+    <img src="demos/Demo - Import.gif" alt="WinHub PC Migration import demo showing how to import an app list and bulk install applications on a new computer" width="600">
+    <br>
+    <em>Import and bulk-install on your new machine</em>
+</div>
+
 ## When Should You Use WinHub?
 
 You know that moment when you're setting up a new Windows machine and suddenly realize you need to install about 47 different programs? That's when WinHub becomes your new best friend. Instead of opening 47 browser tabs and playing "spot the real download button," just search once and get clean WinGet commands for everything.
@@ -36,7 +52,13 @@ Perfect for when you're too lazy to remember whether Discord's package ID is "Di
 
 **For Show-Offs:** Install software through PowerShell like some kind of terminal wizard. Your non-tech friends will be impressed, and you'll feel like a hacker *(even though you're literally just copy-pasting commands - they don't need to know that)*.
 
-## How It Works (Spoiler: It's Easy)
+## How It Works *(Spoiler: It's Easy)*
+
+<div align="center">
+    <img src="demos/Demo - Download.gif" alt="WinHub demo showing the search and download process - searching for an application, selecting a version, and copying the WinGet command" width="600">
+    <br>
+    <em>Search, pick, copy - it's that simple</em>
+</div>
 
 1. **Search**: Type whatever you want - "discord," "chrome," "that code editor thing"
 2. **Pick**: Browse results with actual useful information
