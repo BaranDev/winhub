@@ -1,3 +1,7 @@
+<div align="center">
+    <img src="src/renderer/src/assets/icon.png" alt="WinHub application icon featuring a blue shopping bag with a circular software management interface design containing interconnected nodes, search functionality, and installation controls representing the app store concept" width="256" height="256">
+</div>
+
 # WinHub - The Windows App Store That Actually Works
 
 Tired of hunting through sketchy download sites just to install Chrome? WinHub turns software installation into what it should've been all along - simple, safe, and stupid-fast.
