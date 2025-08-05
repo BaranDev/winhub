@@ -76,7 +76,7 @@ Perfect for when you're too lazy to remember whether Discord's package ID is "Di
 ## Get WinHub Right Now
 
 ### Portable Download (Just Works™)
-1. Grab `WinHub-Portable.zip` from the [latest release](https://github.com/BaranDev/winhub/releases/latest)
+1. Grab `WinHub-portable-win32-x64.zip` from the [latest release](https://github.com/BaranDev/winhub/releases/latest)
 2. Unzip anywhere on your computer
 3. Double-click `WinHub.exe` - boom, you're done
 
