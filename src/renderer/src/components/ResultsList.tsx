@@ -4,9 +4,7 @@ import { ResultItem, CompactResultItem } from "./ResultItem";
 import { LoadingSpinnerWithText } from "./LoadingSpinner";
 import { ErrorMessage, NoResultsMessage } from "./ErrorMessage";
 
-/**
- * Results list component that displays search results with loading and error states
- */
+// list of search results
 export const ResultsList: React.FC<
   ResultsListProps & { viewMode?: "compact" | "detailed"; total?: number }
 > = ({
@@ -20,7 +18,7 @@ export const ResultsList: React.FC<
   viewMode = "compact",
   total,
 }) => {
-  // Loading state
+  // searching
   if (loading) {
     return (
       <div className="mt-8">
@@ -29,7 +27,7 @@ export const ResultsList: React.FC<
     );
   }
 
-  // Error state
+  // error view
   if (error) {
     return (
       <div className="mt-8">
@@ -38,7 +36,7 @@ export const ResultsList: React.FC<
     );
   }
 
-  // No results state
+  // empty state
   if (!results || results.length === 0) {
     return (
       <div className="mt-8">
@@ -47,10 +45,10 @@ export const ResultsList: React.FC<
     );
   }
 
-  // Results state
+  // result view
   return (
     <div className="mt-8">
-      {/* Results Header */}
+      {/* result count */}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
@@ -67,7 +65,7 @@ export const ResultsList: React.FC<
         </div>
 
         <div className="flex items-center space-x-4">
-          {/* Results Stats */}
+          {/* stats */}
           <div className="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
             <span className="flex items-center">
               <div className="w-2 h-2 bg-green-500 rounded-full mr-1"></div>
@@ -81,7 +79,7 @@ export const ResultsList: React.FC<
         </div>
       </div>
 
-      {/* Results Grid */}
+      {/* items */}
       <div
         className={
           viewMode === "compact"
@@ -100,11 +98,11 @@ export const ResultsList: React.FC<
               key={`${result.name}-${result.publisher}-${index}`}
               result={result}
             />
-          )
+          ),
         )}
       </div>
 
-      {/* Load More Button */}
+      {/* load more */}
       {hasMore && onLoadMore && (
         <div className="mt-6 flex justify-center">
           <button
@@ -162,7 +160,7 @@ export const ResultsList: React.FC<
         </div>
       )}
 
-      {/* Results Footer */}
+      {/* footer */}
       <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-center text-center">
           <div className="max-w-md">
@@ -180,181 +178,6 @@ export const ResultsList: React.FC<
           </div>
         </div>
       </div>
-    </div>
-  );
-};
-
-/**
- * Compact results list for smaller layouts
- */
-export const CompactResultsList: React.FC<ResultsListProps> = ({
-  results,
-  loading,
-  error,
-  onRetry,
-}) => {
-  if (loading) {
-    return <LoadingSpinnerWithText text="Searching..." size="sm" />;
-  }
-
-  if (error) {
-    return <ErrorMessage message={error} onRetry={onRetry} />;
-  }
-
-  if (!results || results.length === 0) {
-    return <NoResultsMessage />;
-  }
-
-  return (
-    <div className="space-y-2">
-      <p className="text-sm font-medium text-gray-700 mb-3">
-        {results.length} result{results.length !== 1 ? "s" : ""}
-      </p>
-      {results.map((result, index) => (
-        <ResultItem key={`compact-${result.name}-${index}`} result={result} />
-      ))}
-    </div>
-  );
-};
-
-/**
- * Grid layout for results
- */
-export const ResultsGrid: React.FC<ResultsListProps> = ({
-  results,
-  loading,
-  error,
-  onRetry,
-}) => {
-  if (loading) {
-    return (
-      <div className="mt-8">
-        <LoadingSpinnerWithText text="Searching for programs..." />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="mt-8">
-        <ErrorMessage message={error} onRetry={onRetry} />
-      </div>
-    );
-  }
-
-  if (!results || results.length === 0) {
-    return (
-      <div className="mt-8">
-        <NoResultsMessage />
-      </div>
-    );
-  }
-
-  return (
-    <div className="mt-8">
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold text-gray-900">
-          Found {results.length} result{results.length !== 1 ? "s" : ""}
-        </h2>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {results.map((result, index) => (
-          <ResultItem key={`grid-${result.name}-${index}`} result={result} />
-        ))}
-      </div>
-    </div>
-  );
-};
-
-/**
- * Results list with filtering options
- */
-export const FilterableResultsList: React.FC<
-  ResultsListProps & {
-    showWingetOnly?: boolean;
-    onToggleWingetFilter?: (enabled: boolean) => void;
-  }
-> = ({
-  results,
-  loading,
-  error,
-  onRetry,
-  showWingetOnly = false,
-  onToggleWingetFilter,
-}) => {
-  const filteredResults = showWingetOnly
-    ? results.filter((r) => r.wingetCommand)
-    : results;
-
-  if (loading) {
-    return (
-      <div className="mt-8">
-        <LoadingSpinnerWithText text="Searching for programs..." />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="mt-8">
-        <ErrorMessage message={error} onRetry={onRetry} />
-      </div>
-    );
-  }
-
-  if (!results || results.length === 0) {
-    return (
-      <div className="mt-8">
-        <NoResultsMessage />
-      </div>
-    );
-  }
-
-  return (
-    <div className="mt-8">
-      {/* Filter Controls */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-xl font-semibold text-gray-900">
-            {showWingetOnly
-              ? `${filteredResults.length} WinGet result${
-                  filteredResults.length !== 1 ? "s" : ""
-                }`
-              : `Found ${results.length} result${
-                  results.length !== 1 ? "s" : ""
-                }`}
-          </h2>
-        </div>
-
-        {onToggleWingetFilter && (
-          <div className="flex items-center space-x-2">
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                checked={showWingetOnly}
-                onChange={(e) => onToggleWingetFilter(e.target.checked)}
-                className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-              />
-              <span className="ml-2 text-sm text-gray-700">WinGet only</span>
-            </label>
-          </div>
-        )}
-      </div>
-
-      {/* Results */}
-      {filteredResults.length > 0 ? (
-        <div className="space-y-4">
-          {filteredResults.map((result, index) => (
-            <ResultItem
-              key={`filtered-${result.name}-${index}`}
-              result={result}
-            />
-          ))}
-        </div>
-      ) : (
-        <NoResultsMessage query="WinGet packages" />
-      )}
     </div>
   );
 };

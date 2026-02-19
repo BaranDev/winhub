@@ -27,7 +27,7 @@ export const PackageModal: React.FC<PackageModalProps> = ({
       onClick={handleBackdropClick}
     >
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        {/* Header */}
+        {/* header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex-1 min-w-0">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white truncate">
@@ -57,9 +57,9 @@ export const PackageModal: React.FC<PackageModalProps> = ({
           </button>
         </div>
 
-        {/* Content */}
+        {/* body */}
         <div className="p-6 space-y-6">
-          {/* Package ID */}
+          {/* package id */}
           {pkg.packageId && (
             <div>
               <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
@@ -71,7 +71,7 @@ export const PackageModal: React.FC<PackageModalProps> = ({
             </div>
           )}
 
-          {/* Description */}
+          {/* details */}
           {pkg.description && (
             <div>
               <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
@@ -83,7 +83,7 @@ export const PackageModal: React.FC<PackageModalProps> = ({
             </div>
           )}
 
-          {/* Versions */}
+          {/* version list */}
           {pkg.versions && pkg.versions.length > 0 && (
             <div>
               <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
@@ -112,7 +112,7 @@ export const PackageModal: React.FC<PackageModalProps> = ({
             </div>
           )}
 
-          {/* Tags */}
+          {/* tags */}
           {pkg.tags && pkg.tags.length > 0 && (
             <div>
               <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
@@ -131,7 +131,7 @@ export const PackageModal: React.FC<PackageModalProps> = ({
             </div>
           )}
 
-          {/* License */}
+          {/* license */}
           {pkg.license && (
             <div>
               <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
@@ -153,7 +153,7 @@ export const PackageModal: React.FC<PackageModalProps> = ({
             </div>
           )}
 
-          {/* Links */}
+          {/* urls */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {pkg.homepage && (
               <div>
@@ -184,22 +184,23 @@ export const PackageModal: React.FC<PackageModalProps> = ({
             )}
           </div>
 
-          {/* WinGet Command */}
-          {pkg.wingetCommand && (
+          {/* install command */}
+          {(pkg.wingetCommand || pkg.chocoCommand) && (
             <div>
               <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
-                Install Command
+                Install Command (
+                {pkg.source === "chocolatey" ? "Chocolatey" : "WinGet"})
               </h3>
               <div className="bg-gray-900 dark:bg-gray-800 rounded-md p-3">
                 <code className="text-sm text-green-400 font-mono break-all">
-                  {pkg.wingetCommand}
+                  {pkg.wingetCommand || pkg.chocoCommand}
                 </code>
               </div>
             </div>
           )}
         </div>
 
-        {/* Footer */}
+        {/* footer */}
         <div className="flex justify-end p-6 border-t border-gray-200 dark:border-gray-700">
           <button
             onClick={onClose}

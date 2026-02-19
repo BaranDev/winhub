@@ -1,6 +1,21 @@
 import React, { useState, useEffect } from "react";
 import type { AppListExport } from "../../../shared/types";
 import { WingetInstaller } from "./WingetInstaller";
+import {
+  Upload,
+  Download,
+  CheckCircle,
+  AlertTriangle,
+  Package,
+  Search,
+  DownloadCloud,
+  FileUp,
+  FolderOpen,
+  Rocket,
+  XCircle,
+  FileOutput,
+  RefreshCw,
+} from "lucide-react";
 
 interface AppMigrationProps {
   onClose: () => void;
@@ -16,7 +31,7 @@ export const AppMigration: React.FC<AppMigrationProps> = ({ onClose }) => {
   const [wingetAvailable, setWingetAvailable] = useState<boolean | null>(null);
   const [showWingetInstaller, setShowWingetInstaller] = useState(false);
 
-  // Check WinGet availability on component mount
+  // verify winget on mount
   useEffect(() => {
     checkWingetAvailability();
   }, []);
@@ -29,13 +44,13 @@ export const AppMigration: React.FC<AppMigrationProps> = ({ onClose }) => {
       setWingetAvailable(result.available);
 
       if (result.available) {
-        setStatusMessage(`✅ ${result.message}`);
+        setStatusMessage(`WinGet Ready: ${result.message}`);
       } else {
-        setStatusMessage(`⚠️ ${result.message}`);
+        setStatusMessage(`Warning: ${result.message}`);
       }
     } catch (error) {
       setWingetAvailable(false);
-      setStatusMessage("⚠️ Unable to check WinGet availability");
+      setStatusMessage("Warning: Unable to check WinGet availability");
     }
   };
 
@@ -54,7 +69,7 @@ export const AppMigration: React.FC<AppMigrationProps> = ({ onClose }) => {
       if (result.success) {
         setExportData(result.data);
         setStatusMessage(
-          `Found ${result.data.totalApps} installed applications`
+          `Found ${result.data.totalApps} installed applications`,
         );
       } else {
         setStatusMessage(`Export failed: ${result.message}`);
@@ -71,7 +86,7 @@ export const AppMigration: React.FC<AppMigrationProps> = ({ onClose }) => {
 
     try {
       const result = await (window as any).electronAPI.saveExportFile(
-        exportData
+        exportData,
       );
 
       if (result.success) {
@@ -91,7 +106,7 @@ export const AppMigration: React.FC<AppMigrationProps> = ({ onClose }) => {
       if (result.success) {
         setImportData(result.data);
         setStatusMessage(
-          `Loaded ${result.data.totalApps} applications from ${result.data.computerName}`
+          `Loaded ${result.data.totalApps} applications from ${result.data.computerName}`,
         );
       } else {
         setStatusMessage(`Import failed: ${result.message}`);
@@ -111,25 +126,23 @@ export const AppMigration: React.FC<AppMigrationProps> = ({ onClose }) => {
 
     setIsImporting(true);
     setStatusMessage(
-      "Installing applications... This may take several minutes."
+      "Installing applications... This may take several minutes.",
     );
 
     try {
       const result = await (window as any).electronAPI.executeBulkInstall(
-        importData.wingetCommand
+        importData.wingetCommand,
       );
 
       if (result.success) {
-        setStatusMessage("✅ All applications installed successfully!");
+        setStatusMessage("All applications installed successfully!");
       } else {
         setStatusMessage(
-          `⚠️ Installation completed with issues: ${result.message}`
+          `Installation completed with issues: ${result.message}`,
         );
       }
     } catch (error) {
-      setStatusMessage(
-        "❌ Installation failed: Unable to execute bulk install"
-      );
+      setStatusMessage("Installation failed: Unable to execute bulk install");
     } finally {
       setIsImporting(false);
     }
@@ -138,7 +151,7 @@ export const AppMigration: React.FC<AppMigrationProps> = ({ onClose }) => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
-        {/* Header */}
+        {/* header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <div>
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -148,7 +161,7 @@ export const AppMigration: React.FC<AppMigrationProps> = ({ onClose }) => {
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 Transfer your app collection between computers
               </p>
-              {/* WinGet Status Indicator */}
+              {/* winget status */}
               <div className="flex items-center space-x-1">
                 {wingetAvailable === null ? (
                   <div className="w-3 h-3 bg-gray-400 rounded-full animate-pulse"></div>
@@ -161,8 +174,8 @@ export const AppMigration: React.FC<AppMigrationProps> = ({ onClose }) => {
                   {wingetAvailable === null
                     ? "Checking..."
                     : wingetAvailable
-                    ? "WinGet Ready"
-                    : "WinGet Missing"}
+                      ? "WinGet Ready"
+                      : "WinGet Missing"}
                 </span>
               </div>
             </div>
@@ -187,7 +200,7 @@ export const AppMigration: React.FC<AppMigrationProps> = ({ onClose }) => {
           </button>
         </div>
 
-        {/* Tabs */}
+        {/* navigation */}
         <div className="flex border-b border-gray-200 dark:border-gray-700">
           <button
             onClick={() => setActiveTab("export")}
@@ -197,7 +210,9 @@ export const AppMigration: React.FC<AppMigrationProps> = ({ onClose }) => {
                 : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
             }`}
           >
-            📤 Export Apps (From This PC)
+            <span className="flex items-center justify-center gap-2">
+              <Upload className="w-4 h-4" /> Export Apps (From This PC)
+            </span>
           </button>
           <button
             onClick={() => setActiveTab("import")}
@@ -207,11 +222,13 @@ export const AppMigration: React.FC<AppMigrationProps> = ({ onClose }) => {
                 : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
             }`}
           >
-            📥 Import Apps (To This PC)
+            <span className="flex items-center justify-center gap-2">
+              <Download className="w-4 h-4" /> Import Apps (To This PC)
+            </span>
           </button>
         </div>
 
-        {/* Content */}
+        {/* tab body */}
         <div className="p-6 overflow-y-auto max-h-96">
           {activeTab === "export" ? (
             <div className="space-y-6">
@@ -269,7 +286,9 @@ export const AppMigration: React.FC<AppMigrationProps> = ({ onClose }) => {
                           onClick={() => setShowWingetInstaller(true)}
                           className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg"
                         >
-                          📦 Install WinGet
+                          <span className="flex items-center justify-center gap-2">
+                            <Package className="w-4 h-4" /> Install WinGet
+                          </span>
                         </button>
                       </div>
                     )}
@@ -319,18 +338,22 @@ export const AppMigration: React.FC<AppMigrationProps> = ({ onClose }) => {
                           onClick={handleSaveExport}
                           className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg"
                         >
-                          💾 Save Export File
+                          <span className="flex items-center justify-center gap-2">
+                            <FileOutput className="w-4 h-4" /> Save Export File
+                          </span>
                         </button>
                         <button
                           onClick={() => setExportData(null)}
                           className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white text-sm font-medium rounded-lg"
                         >
-                          🔄 Scan Again
+                          <span className="flex items-center justify-center gap-2">
+                            <RefreshCw className="w-4 h-4" /> Scan Again
+                          </span>
                         </button>
                       </div>
                     </div>
 
-                    {/* Preview of apps */}
+                    {/* app preview */}
                     <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
                       <h4 className="font-medium text-gray-900 dark:text-white mb-3">
                         Apps Preview ({Math.min(exportData.apps.length, 5)} of{" "}
@@ -389,7 +412,9 @@ export const AppMigration: React.FC<AppMigrationProps> = ({ onClose }) => {
                     onClick={handleLoadImport}
                     className="px-6 py-3 bg-ubuntu-orange hover:bg-ubuntu-orange/90 text-white font-medium rounded-lg transition-colors"
                   >
-                    📂 Select Import File
+                    <span className="flex items-center justify-center gap-2">
+                      <FolderOpen className="w-5 h-5" /> Select Import File
+                    </span>
                   </button>
                 ) : (
                   <div className="space-y-4">
@@ -421,13 +446,15 @@ export const AppMigration: React.FC<AppMigrationProps> = ({ onClose }) => {
                           onClick={() => setShowWingetInstaller(true)}
                           className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg"
                         >
-                          📦 Install WinGet
+                          <span className="flex items-center justify-center gap-2">
+                            <Package className="w-4 h-4" /> Install WinGet
+                          </span>
                         </button>
                       </div>
                     )}
 
                     <div className="bg-ubuntu-orange/10 border border-ubuntu-orange/30 rounded-lg p-4">
-                      {/* rest of the import data display */}
+                      {/* import details */}
                       <div className="flex items-center mb-3">
                         <svg
                           className="w-5 h-5 text-ubuntu-orange mr-2"
@@ -462,19 +489,24 @@ export const AppMigration: React.FC<AppMigrationProps> = ({ onClose }) => {
                               Installing...
                             </span>
                           ) : (
-                            "🚀 Install All Apps"
+                            <span className="flex items-center justify-center gap-2">
+                              <Rocket className="w-4 h-4" /> Install All Apps
+                            </span>
                           )}
                         </button>
                         <button
                           onClick={() => setImportData(null)}
                           className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white text-sm font-medium rounded-lg"
                         >
-                          📂 Choose Different File
+                          <span className="flex items-center justify-center gap-2">
+                            <FolderOpen className="w-4 h-4" /> Choose Different
+                            File
+                          </span>
                         </button>
                       </div>
                     </div>
 
-                    {/* Preview of apps to install */}
+                    {/* install preview */}
                     <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
                       <h4 className="font-medium text-gray-900 dark:text-white mb-3">
                         Apps to Install ({Math.min(importData.apps.length, 5)}{" "}
@@ -505,7 +537,7 @@ export const AppMigration: React.FC<AppMigrationProps> = ({ onClose }) => {
           )}
         </div>
 
-        {/* Status Message */}
+        {/* logs */}
         {statusMessage && (
           <div className="px-6 pb-4">
             <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-3">
@@ -516,22 +548,22 @@ export const AppMigration: React.FC<AppMigrationProps> = ({ onClose }) => {
           </div>
         )}
 
-        {/* Footer */}
+        {/* footer tip */}
         <div className="bg-gray-50 dark:bg-gray-700/50 px-6 py-4 rounded-b-xl">
           <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-            <span>
-              💡 Tip: Export creates a portable file you can share between
-              computers
+            <span className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-yellow-500" /> Tip: Export
+              creates a portable file you can share between computers
             </span>
-            <span>
-              ⚠️ Import will install apps using WinGet - make sure it's
-              available
+            <span className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-red-500" /> Import will
+              install apps using WinGet - make sure it's available
             </span>
           </div>
         </div>
       </div>
 
-      {/* WinGet Installer Modal */}
+      {/* winget setup */}
       {showWingetInstaller && (
         <WingetInstaller
           onClose={() => setShowWingetInstaller(false)}

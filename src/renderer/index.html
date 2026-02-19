@@ -1,8 +1,11 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
     <meta
       http-equiv="Content-Security-Policy"
       content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://api.winget.run https://customsearch.googleapis.com; font-src 'self';"
@@ -17,32 +20,26 @@
     />
     <meta name="author" content="WinHub Team" />
 
-    <!-- Prevent zooming on mobile-like displays -->
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-    />
-
-    <!-- Favicon (optional - would need icon files) -->
+    <!-- favicon -->
     <!-- <link rel="icon" type="image/x-icon" href="/favicon.ico"> -->
 
     <title>WinHub - Find and install any Windows program instantly</title>
 
-    <!-- Preload important resources -->
+    <!-- preload -->
     <link rel="preconnect" href="https://api.winget.run" />
 
-    <!-- Critical CSS will be injected by webpack -->
+    <!-- critical styles -->
     <style>
-      /* Critical styles for initial load */
+      /* critical splash */
       body {
         margin: 0;
         padding: 0;
-        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        font-family: "Inter", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
         background-color: #f9fafb;
         color: #111827;
       }
 
-      /* Loading spinner for initial render */
+      /* splash spinner */
       .initial-loading {
         position: fixed;
         top: 50%;
@@ -72,23 +69,23 @@
         }
       }
 
-      /* Hide loading when React takes over */
+      /* cleanup splash */
       .loaded .initial-loading {
         display: none;
       }
     </style>
   </head>
   <body>
-    <!-- Main app container -->
+    <!-- app root -->
     <div id="root">
-      <!-- Initial loading indicator -->
+      <!-- splash screen -->
       <div class="initial-loading">
         <div class="initial-spinner"></div>
         <div>Loading WinHub...</div>
       </div>
     </div>
 
-    <!-- Noscript fallback -->
+    <!-- no js -->
     <noscript>
       <div
         style="
@@ -103,20 +100,20 @@
       </div>
     </noscript>
 
-    <!-- Application scripts will be injected by webpack -->
+    <!-- scripts -->
 
     <script>
-      // Mark as loaded when DOM is ready
+      // dom ready marker
       document.addEventListener("DOMContentLoaded", function () {
         document.body.classList.add("loaded");
       });
 
-      // Basic error handling before React loads
+      // pre-react errors
       window.addEventListener("error", function (event) {
         console.error("Application error:", event.error);
       });
 
-      // Handle promise rejections before React error boundaries
+      // pre-react rejections
       window.addEventListener("unhandledrejection", function (event) {
         console.error("Unhandled promise rejection:", event.reason);
       });

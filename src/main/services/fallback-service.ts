@@ -1,7 +1,7 @@
 import { GoogleSearchResponse, GoogleSearchItem, ServiceResult } from '../../shared/types';
 const fetch = require('node-fetch');
 
-// Simple cache for website search results
+// simple website result cache
 class WebsiteCache {
   private cache = new Map<string, { url: string | null; timestamp: number }>();
   private readonly TTL = 10 * 60 * 1000; // 10 minutes
@@ -32,11 +32,7 @@ class WebsiteCache {
 
 const websiteCache = new WebsiteCache();
 
-/**
- * Finds the official website for an application using Google Custom Search
- * @param appName - The name of the application
- * @returns Promise<ServiceResult<string | null>>
- */
+// find official site via ddg html scraper
 export async function findOfficialWebsite(appName: string): Promise<ServiceResult<string | null>> {
   if (!appName || appName.trim().length === 0) {
     return {
@@ -47,7 +43,7 @@ export async function findOfficialWebsite(appName: string): Promise<ServiceResul
 
   const trimmedAppName = appName.trim();
   
-  // Check cache first
+  // check cache
   const cachedResult = websiteCache.get(trimmedAppName);
   if (cachedResult !== undefined) {
     return {
@@ -57,20 +53,27 @@ export async function findOfficialWebsite(appName: string): Promise<ServiceResul
   }
 
   try {
-    // Use Google Custom Search API if available, otherwise fallback to direct search
-    const googleApiKey = process.env.GOOGLE_API_KEY;
-    const searchEngineId = process.env.GOOGLE_SEARCH_ENGINE_ID;
+    const searchQuery = encodeURIComponent(`official site ${trimmedAppName} download`);
+    const searchUrl = `https://html.duckduckgo.com/html/?q=${searchQuery}`;
 
-    let officialUrl: string | null = null;
+    const response = await fetch(searchUrl, {
+      method: 'GET',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml',
+        'Accept-Language': 'en-US,en;q=0.9'
+      },
+      signal: AbortSignal.timeout(8000)
+    });
 
-    if (googleApiKey && searchEngineId) {
-      officialUrl = await searchWithGoogleAPI(trimmedAppName, googleApiKey, searchEngineId);
-    } else {
-      // Fallback: try to construct common official website patterns
-      officialUrl = await guessOfficialWebsite(trimmedAppName);
+    if (!response.ok) {
+      throw new Error(`DuckDuckGo Search error: ${response.status}`);
     }
 
-    // Cache the result
+    const htmlText = await response.text();
+    const officialUrl = extractUrlFromDDGHtml(htmlText, trimmedAppName);
+
+    // cache result
     websiteCache.set(trimmedAppName, officialUrl);
 
     return {
@@ -96,129 +99,90 @@ export async function findOfficialWebsite(appName: string): Promise<ServiceResul
   }
 }
 
-/**
- * Search for official website using Google Custom Search API
- */
-async function searchWithGoogleAPI(appName: string, apiKey: string, searchEngineId: string): Promise<string | null> {
-  const searchQuery = `${appName} official website download`;
-  const apiUrl = 'https://customsearch.googleapis.com/customsearch/v1';
+// extract urls from html
+function extractUrlFromDDGHtml(html: string, appName: string): string | null {
+  // match result links
+  const urlParamsRegex = /uddg=([^&'"]+)/g;
   
-  const searchParams = new URLSearchParams({
-    key: apiKey,
-    cx: searchEngineId,
-    q: searchQuery,
-    num: '5',
-    safe: 'active'
-  });
-
-  const response = await fetch(`${apiUrl}?${searchParams}`, {
-    method: 'GET',
-    headers: {
-      'User-Agent': 'WinHub/1.0.0'
-    },
-    signal: AbortSignal.timeout(8000)
-  });
-
-  if (!response.ok) {
-    throw new Error(`Google Search API error: ${response.status}`);
+  const extractedUrls: string[] = [];
+  let match;
+  
+  while ((match = urlParamsRegex.exec(html)) !== null) {
+    try {
+      // decode url
+      const decodedUrl = decodeURIComponent(match[1]);
+      extractedUrls.push(decodedUrl);
+    } catch {
+      continue;
+    }
   }
 
-  const searchResponse = await response.json() as GoogleSearchResponse;
-  
-  if (!searchResponse.items || searchResponse.items.length === 0) {
+  if (extractedUrls.length === 0) {
     return null;
   }
 
-  // Find the most likely official website
-  return findOfficialFromResults(appName, searchResponse.items);
+  // mock for scoring
+  const mockItems: GoogleSearchItem[] = extractedUrls.map(url => {
+    let hostname = '';
+    try { hostname = new URL(url).hostname; } catch {}
+    return {
+      title: hostname,
+      link: url,
+      displayLink: hostname,
+      snippet: ''
+    };
+  });
+
+  return findOfficialFromResults(appName, mockItems);
 }
 
-/**
- * Analyzes search results to find the most likely official website
- */
+// find most likely official site by scoring
 function findOfficialFromResults(appName: string, items: GoogleSearchItem[]): string | null {
   const appNameLower = appName.toLowerCase();
   
-  // Scoring system for results
+  // score the results
   const scoredResults = items.map(item => {
     let score = 0;
     const titleLower = item.title.toLowerCase();
     const linkLower = item.link.toLowerCase();
     const displayLinkLower = item.displayLink.toLowerCase();
     
-    // Higher score for exact name matches
+    // boost exact name matches
     if (titleLower.includes(appNameLower)) score += 3;
     if (linkLower.includes(appNameLower.replace(/\s+/g, ''))) score += 2;
     if (displayLinkLower.includes(appNameLower.replace(/\s+/g, ''))) score += 2;
     
-    // Higher score for official-looking domains
+    // boost official domains
     if (linkLower.includes('official') || titleLower.includes('official')) score += 2;
     if (linkLower.includes('download') || titleLower.includes('download')) score += 1;
     
-    // Prefer common official patterns
+    // prefer .com/.org/.io
     if (linkLower.match(/\.(com|org|net|io)$/)) score += 1;
     
-    // Avoid obviously non-official sites
+    // skip aggregate sites like softonic
     if (linkLower.includes('wikipedia') || 
         linkLower.includes('github.com') ||
         linkLower.includes('sourceforge') ||
         linkLower.includes('softonic') ||
         linkLower.includes('cnet') ||
-        linkLower.includes('filehippo')) {
-      score -= 2;
+        linkLower.includes('filehippo') ||
+        linkLower.includes('uptodown') ||
+        linkLower.includes('alternativeto')) {
+      score -= 5;
     }
     
     return { item, score };
   });
   
-  // Sort by score and return the highest scoring result
+  // sort and return best
   scoredResults.sort((a, b) => b.score - a.score);
   
-  return scoredResults.length > 0 && scoredResults[0].score > 0 
+  return scoredResults.length > 0 && scoredResults[0].score > -3
     ? scoredResults[0].item.link 
     : null;
 }
 
-/**
- * Attempts to guess official website patterns when API is not available
- */
-async function guessOfficialWebsite(appName: string): Promise<string | null> {
-  const nameForUrl = appName.toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9]/g, '');
-  
-  // Common patterns for official websites
-  const patterns = [
-    `https://${nameForUrl}.com`,
-    `https://www.${nameForUrl}.com`,
-    `https://${nameForUrl}.org`,
-    `https://www.${nameForUrl}.org`,
-    `https://${nameForUrl}.io`,
-    `https://www.${nameForUrl}.io`,
-    `https://${nameForUrl}.net`,
-    `https://www.${nameForUrl}.net`
-  ];
-  
-  // Test each pattern to see if it's accessible
-  for (const url of patterns) {
-    try {
-      const response = await fetch(url, {
-        method: 'HEAD',
-        signal: AbortSignal.timeout(3000)
-      });
-      
-      if (response.ok) {
-        return url;
-      }
-    } catch {
-      // Continue to next pattern
-    }
-  }
-  
-  return null;
-}
-
-/**
- * Validates if a URL appears to be an official download page
- */
+// check if url looks official
 export function isOfficialDownloadUrl(url: string, appName: string): boolean {
   if (!url || !appName) return false;
   
@@ -228,15 +192,15 @@ export function isOfficialDownloadUrl(url: string, appName: string): boolean {
     const pathname = urlObj.pathname.toLowerCase();
     const appNameClean = appName.toLowerCase().replace(/\s+/g, '');
     
-    // Check if domain contains app name
+    // domain match
     const domainContainsApp = hostname.includes(appNameClean);
     
-    // Check for download-related paths
+    // download paths
     const hasDownloadPath = pathname.includes('download') || 
                            pathname.includes('get') || 
                            pathname.includes('install');
     
-    // Avoid known non-official domains
+    // filter non-official domains
     const nonOfficialDomains = [
       'github.com', 'sourceforge.net', 'softonic.com', 
       'cnet.com', 'filehippo.com', 'wikipedia.org'
@@ -252,9 +216,7 @@ export function isOfficialDownloadUrl(url: string, appName: string): boolean {
   }
 }
 
-/**
- * Clears the website search cache
- */
+// clear cache
 export function clearWebsiteCache(): void {
   websiteCache.clear();
 }

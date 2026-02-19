@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { SearchState, SearchResult, UseSearchReturn } from '../types';
+import { SearchState, SearchResult, UseSearchReturn, PackageSource } from '../types';
 import { searchApp, sanitizeSearchQuery, isValidSearchQuery, formatErrorMessage, debounce } from '../utils/ipc';
 
 const INITIAL_STATE: SearchState = {
@@ -12,21 +12,20 @@ const INITIAL_STATE: SearchState = {
   loadingMore: false
 };
 
-const DEBOUNCE_DELAY = 800; // 800ms debounce for search input
-const MIN_QUERY_LENGTH = 2; // Minimum characters before searching
-const RESULTS_PER_PAGE = 24; // Results per page (API maximum)
+const DEBOUNCE_DELAY = 800; // input debounce
+const MIN_QUERY_LENGTH = 2; // min search length
+const RESULTS_PER_PAGE = 24; // items per page
 
-/**
- * Custom hook for managing search state and operations
- * @returns UseSearchReturn
- */
-export function useSearch(): UseSearchReturn {
+// hook to manage search state
+export function useSearch(activeSources: PackageSource[] = ['winget']): UseSearchReturn {
   const [searchState, setSearchState] = useState<SearchState>(INITIAL_STATE);
   const searchAbortControllerRef = useRef<AbortController | null>(null);
   const lastSearchQueryRef = useRef<string>('');
   const currentPageRef = useRef<number>(0);
+  const activeSourcesRef = useRef<PackageSource[]>(activeSources);
+  activeSourcesRef.current = activeSources;
 
-  // Cleanup abort controller on unmount
+  // abort on unmount
   useEffect(() => {
     return () => {
       if (searchAbortControllerRef.current) {
@@ -35,13 +34,11 @@ export function useSearch(): UseSearchReturn {
     };
   }, []);
 
-  /**
-   * Performs the actual search operation
-   */
+  // run the search
   const performSearch = useCallback(async (query: string, isLoadMore: boolean = false): Promise<void> => {
     const sanitizedQuery = sanitizeSearchQuery(query);
     
-    // Don't search if query is too short or invalid
+    // skip if invalid or short
     if (!isLoadMore && (!isValidSearchQuery(sanitizedQuery) || sanitizedQuery.length < MIN_QUERY_LENGTH)) {
       setSearchState(prev => ({
         ...prev,
@@ -55,7 +52,7 @@ export function useSearch(): UseSearchReturn {
       return;
     }
 
-    // Don't search if query hasn't changed (unless loading more)
+    // skip if same query
     if (!isLoadMore && sanitizedQuery === lastSearchQueryRef.current) {
       return;
     }
@@ -79,12 +76,10 @@ export function useSearch(): UseSearchReturn {
     }));
 
     try {
-      console.log(`Searching for: ${sanitizedQuery} (page: ${currentPage})`);
-      const response = await searchApp(sanitizedQuery, currentPage, RESULTS_PER_PAGE);
+      console.log(`Searching for: ${sanitizedQuery} (page: ${currentPage}, sources: ${activeSourcesRef.current.join(',')})`);
+      const response = await searchApp(sanitizedQuery, currentPage, RESULTS_PER_PAGE, activeSourcesRef.current);
       
-      // Determine if there are more results available:
-      // - If we get exactly 24 results, there might be more on the next page
-      // - If we get fewer than 24 results, we've reached the end
+      // check if more results exist
       const hasMore = response.results.length === RESULTS_PER_PAGE;
       
       setSearchState(prev => ({
@@ -112,25 +107,23 @@ export function useSearch(): UseSearchReturn {
     }
   }, []);
 
-  // Debounced search function to avoid excessive API calls
+  // debounced search to save api hits
   const debouncedSearch = useCallback(
     debounce(performSearch, DEBOUNCE_DELAY),
     [performSearch]
   );
 
-  /**
-   * Initiates a search with the given query
-   */
+  // start search
   const search = useCallback((query: string): void => {
     const sanitizedQuery = sanitizeSearchQuery(query);
     
-    // Update query immediately for UI responsiveness
+    // immediate ui query update
     setSearchState(prev => ({
       ...prev,
       query: sanitizedQuery
     }));
 
-    // If query is empty, clear results immediately
+    // clear if empty
     if (!sanitizedQuery || sanitizedQuery.length === 0) {
       setSearchState(prev => ({
         ...prev,
@@ -141,7 +134,7 @@ export function useSearch(): UseSearchReturn {
       return;
     }
 
-    // If query is too short, don't search but show loading state
+    // stop if too short
     if (sanitizedQuery.length < MIN_QUERY_LENGTH) {
       setSearchState(prev => ({
         ...prev,
@@ -152,22 +145,20 @@ export function useSearch(): UseSearchReturn {
       return;
     }
 
-    // Start loading state immediately for better UX
+    // show loading early
     setSearchState(prev => ({
       ...prev,
       loading: true,
       error: null
     }));
 
-    // Perform debounced search
+    // debounced search
     debouncedSearch(sanitizedQuery);
   }, [debouncedSearch]);
 
-  /**
-   * Clears the search state and results
-   */
+  // reset search
   const clearSearch = useCallback((): void => {
-    // Cancel any ongoing search
+    // abort existing search
     if (searchAbortControllerRef.current) {
       searchAbortControllerRef.current.abort();
     }
@@ -178,23 +169,29 @@ export function useSearch(): UseSearchReturn {
     setSearchState(INITIAL_STATE);
   }, []);
 
-  /**
-   * Retry the last search (useful for error recovery)
-   */
+  // retry last query
   const retrySearch = useCallback((): void => {
     if (searchState.query) {
       performSearch(searchState.query);
     }
   }, [searchState.query, performSearch]);
 
-  /**
-   * Load more results for the current query
-   */
+  // fetch next page
   const loadMore = useCallback((): void => {
     if (searchState.query && searchState.hasMore && !searchState.loading && !searchState.loadingMore) {
       performSearch(searchState.query, true);
     }
   }, [searchState.query, searchState.hasMore, searchState.loading, searchState.loadingMore, performSearch]);
+
+  // refresh on source change
+  useEffect(() => {
+    if (searchState.query && searchState.query.length >= MIN_QUERY_LENGTH) {
+      lastSearchQueryRef.current = ''; // Force re-search
+      performSearch(searchState.query);
+    }
+  // trigger on join changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSources.join(',')]);
 
   return {
     searchState,
@@ -204,89 +201,3 @@ export function useSearch(): UseSearchReturn {
   };
 }
 
-/**
- * Hook for managing search history (optional enhancement)
- * @param maxHistoryItems - Maximum number of history items to keep
- * @returns Search history functions
- */
-export function useSearchHistory(maxHistoryItems: number = 10) {
-  const [history, setHistory] = useState<string[]>([]);
-
-  const addToHistory = useCallback((query: string): void => {
-    if (!query || query.trim().length < MIN_QUERY_LENGTH) return;
-
-    const sanitizedQuery = sanitizeSearchQuery(query);
-    
-    setHistory(prev => {
-      // Remove existing entry if present
-      const filtered = prev.filter(item => item !== sanitizedQuery);
-      // Add to beginning and limit size
-      return [sanitizedQuery, ...filtered].slice(0, maxHistoryItems);
-    });
-  }, [maxHistoryItems]);
-
-  const clearHistory = useCallback((): void => {
-    setHistory([]);
-  }, []);
-
-  const removeFromHistory = useCallback((query: string): void => {
-    setHistory(prev => prev.filter(item => item !== query));
-  }, []);
-
-  return {
-    history,
-    addToHistory,
-    clearHistory,
-    removeFromHistory
-  };
-}
-
-/**
- * Enhanced search hook with history and caching
- * @returns Enhanced search functionality
- */
-export function useEnhancedSearch() {
-  const search = useSearch();
-  const history = useSearchHistory();
-  const [searchCache, setSearchCache] = useState<Map<string, SearchResult[]>>(new Map());
-
-  const searchWithHistory = useCallback((query: string): void => {
-    search.search(query);
-    
-    if (query && query.trim().length >= MIN_QUERY_LENGTH) {
-      history.addToHistory(query);
-    }
-  }, [search, history]);
-
-  // Cache successful search results
-  useEffect(() => {
-    if (search.searchState.results.length > 0 && !search.searchState.loading && !search.searchState.error) {
-      setSearchCache(prev => {
-        const newCache = new Map(prev);
-        newCache.set(search.searchState.query, search.searchState.results);
-        
-        // Limit cache size
-        if (newCache.size > 20) {
-          const firstKey = newCache.keys().next().value;
-          if (firstKey) {
-            newCache.delete(firstKey);
-          }
-        }
-        
-        return newCache;
-      });
-    }
-  }, [search.searchState]);
-
-  const getCachedResults = useCallback((query: string): SearchResult[] | null => {
-    return searchCache.get(sanitizeSearchQuery(query)) || null;
-  }, [searchCache]);
-
-  return {
-    ...search,
-    search: searchWithHistory,
-    history: history.history,
-    clearHistory: history.clearHistory,
-    getCachedResults
-  };
-}

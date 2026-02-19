@@ -1,8 +1,13 @@
+// Package source identifiers
+export type PackageSource = 'winget' | 'chocolatey';
+
 // Shared types for both main and renderer processes
 export interface SearchResult {
   name: string;
   publisher: string;
+  source: PackageSource | 'web';
   wingetCommand?: string;
+  chocoCommand?: string;
   officialUrl?: string;
   searchUrls?: SearchEngineLink[];
   versions?: string[];
@@ -107,7 +112,7 @@ export interface ServiceResult<T> {
 
 // IPC Communication Types
 export interface ElectronAPI {
-  searchApp: (query: string, page?: number, limit?: number) => Promise<SearchResponse>;
+  searchApp: (query: string, page?: number, limit?: number, sources?: PackageSource[]) => Promise<SearchResponse>;
   copyToClipboard: (text: string) => Promise<boolean>;
   executeWingetInstall: (command: string) => Promise<{success: boolean; message: string; needsElevation?: boolean}>;
   generateWingetCommand: (packageId: string, version?: string) => Promise<string>;

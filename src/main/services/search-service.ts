@@ -1,10 +1,6 @@
 import { SearchEngineLink, ServiceResult } from '../../shared/types';
 
-/**
- * Generates search engine links for finding and downloading an application
- * @param appName - The name of the application to search for
- * @returns Promise<ServiceResult<SearchEngineLink[]>>
- */
+// generate external search engine links
 export async function generateSearchLinks(appName: string): Promise<ServiceResult<SearchEngineLink[]>> {
   if (!appName || appName.trim().length === 0) {
     return {
@@ -15,7 +11,7 @@ export async function generateSearchLinks(appName: string): Promise<ServiceResul
 
   try {
     const trimmedAppName = appName.trim();
-    const encodedAppName = encodeURIComponent(`download ${trimmedAppName} official`);
+    const encodedAppName = encodeURIComponent(`download ${trimmedAppName} official site`);
     
     const searchLinks: SearchEngineLink[] = [
       {
@@ -36,7 +32,7 @@ export async function generateSearchLinks(appName: string): Promise<ServiceResul
       }
     ];
 
-    // Add specialized search links for software
+    // specialized software search
     const softwareSearchLinks: SearchEngineLink[] = [
       {
         engine: 'AlternativeTo',
@@ -48,7 +44,7 @@ export async function generateSearchLinks(appName: string): Promise<ServiceResul
       }
     ];
 
-    // Combine all search links
+    // combine all links
     const allSearchLinks = [...searchLinks, ...softwareSearchLinks];
 
     return {
@@ -74,17 +70,12 @@ export async function generateSearchLinks(appName: string): Promise<ServiceResul
   }
 }
 
-/**
- * Generates a direct search URL for a specific search engine
- * @param engine - The search engine name
- * @param appName - The application name to search for
- * @returns string | null
- */
+// build direct url
 export function generateDirectSearchUrl(engine: string, appName: string): string | null {
   if (!engine || !appName) return null;
 
   const trimmedAppName = appName.trim();
-  const searchQuery = `download ${trimmedAppName} official`;
+  const searchQuery = `download ${trimmedAppName} official site`;
   
   switch (engine.toLowerCase()) {
     case 'google':
@@ -111,11 +102,7 @@ export function generateDirectSearchUrl(engine: string, appName: string): string
   }
 }
 
-/**
- * Gets a user-friendly search engine name
- * @param engine - The search engine identifier
- * @returns string
- */
+// friendly engine names
 export function getSearchEngineName(engine: string): string {
   const engineNames: Record<string, string> = {
     'google': 'Google',
@@ -130,11 +117,7 @@ export function getSearchEngineName(engine: string): string {
   return engineNames[engine.toLowerCase()] || engine;
 }
 
-/**
- * Validates if a search engine is supported
- * @param engine - The search engine to validate
- * @returns boolean
- */
+// support check
 export function isSupportedSearchEngine(engine: string): boolean {
   const supportedEngines = [
     'google', 'duckduckgo', 'ddg', 'bing', 'yandex', 
@@ -144,25 +127,17 @@ export function isSupportedSearchEngine(engine: string): boolean {
   return supportedEngines.includes(engine.toLowerCase());
 }
 
-/**
- * Creates a Windows search query that can be used with the system's default search
- * @param appName - The application name
- * @returns string
- */
+// system search link
 export function createWindowsSearchQuery(appName: string): string {
   if (!appName || appName.trim().length === 0) {
     return '';
   }
   
-  // Windows search query format
+  // windows search syntax
   return `search-ms:displayname=Search%20Results%20in%20Apps&query=${encodeURIComponent(appName)}`;
 }
 
-/**
- * Generates specialized download site searches
- * @param appName - The application name
- * @returns SearchEngineLink[]
- */
+// github/sourceforge etc.
 export function generateDownloadSiteLinks(appName: string): SearchEngineLink[] {
   if (!appName || appName.trim().length === 0) {
     return [];
@@ -190,11 +165,7 @@ export function generateDownloadSiteLinks(appName: string): SearchEngineLink[] {
   ];
 }
 
-/**
- * Creates search links specifically for open source software
- * @param appName - The application name
- * @returns SearchEngineLink[]
- */
+// open source specific links
 export function generateOpenSourceLinks(appName: string): SearchEngineLink[] {
   if (!appName || appName.trim().length === 0) {
     return [];

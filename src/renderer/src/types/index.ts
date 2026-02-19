@@ -1,5 +1,6 @@
 // Re-export shared types
 import type {
+  PackageSource,
   SearchResult,
   SearchResponse,
   SearchEngineLink,
@@ -15,6 +16,7 @@ import type {
 
 // Re-export for convenience
 export type {
+  PackageSource,
   SearchResult,
   SearchResponse,
   SearchEngineLink,

@@ -4,18 +4,17 @@ import * as fs from 'fs';
 import * as os from 'os';
 import { spawn } from 'child_process';
 import { searchWingetPackages, generateWingetCommand } from './services/winget-service';
+import { searchChocolateyPackages, generateChocoCommand } from './services/chocolatey-service';
 import { findOfficialWebsite } from './services/fallback-service';
 import { generateSearchLinks } from './services/search-service';
-import { SearchResult, SearchResponse, WingetApiResponse, AppListExport, InstalledApp } from '../shared/types';
+import { SearchResult, SearchResponse, PackageSource, WingetApiResponse, AppListExport, InstalledApp } from '../shared/types';
 
-// Keep a global reference of the window object
+// window ref
 let mainWindow: BrowserWindow | null = null;
 
-/**
- * Creates the main application window
- */
+// create the window
 function createMainWindow(): void {
-  // Create the browser window
+  // window config
   mainWindow = new BrowserWindow({
     width: 900,
     height: 700,
@@ -42,20 +41,20 @@ function createMainWindow(): void {
     backgroundColor: '#ffffff' // White background while loading
   });
 
-  // Load the app
+  // load app content
   const isDev = process.env.NODE_ENV === 'development';
   
   if (isDev) {
-    // Development: load from webpack dev server
+    // dev mode
     mainWindow.loadURL('http://localhost:4000');
-    // Open DevTools in development
+    // open tools
     mainWindow.webContents.openDevTools();
   } else {
-    // Production: load from built files
+    // prod mode
     mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
   }
 
-  // Show window when ready to prevent visual flash
+  // show when ready
   mainWindow.once('ready-to-show', () => {
     if (mainWindow) {
       mainWindow.show();
@@ -69,18 +68,18 @@ function createMainWindow(): void {
     }
   });
 
-  // Handle window closed
+  // cleanup on close
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
 
-  // Handle external links
+  // external links help
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
     return { action: 'deny' };
   });
 
-  // Security: prevent navigation to external URLs
+  // nav security
   mainWindow.webContents.on('will-navigate', (event, navigationUrl) => {
     const parsedUrl = new URL(navigationUrl);
     
@@ -99,7 +98,7 @@ function createMainWindow(): void {
 app.whenReady().then(() => {
   createMainWindow();
 
-  // macOS: Re-create window when dock icon is clicked
+  // mac reboot
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createMainWindow();
@@ -107,15 +106,15 @@ app.whenReady().then(() => {
   });
 });
 
-// Quit when all windows are closed
+// quit on close
 app.on('window-all-closed', () => {
-  // On macOS, keep app running even when all windows are closed
+  // mac keepalive
   if (process.platform !== 'darwin') {
     app.quit();
   }
 });
 
-// Security: Prevent new window creation
+// creation security
 app.on('web-contents-created', (event, contents) => {
   contents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
@@ -127,49 +126,95 @@ app.on('web-contents-created', (event, contents) => {
  * IPC Handlers
  */
 
-// Handle app search requests
-ipcMain.handle('search-app', async (event, query: string, page: number = 0, limit: number = 20): Promise<SearchResponse> => {
-  console.log(`Main process received search query: "${query}" (page: ${page}, limit: ${limit})`);
-  
+// search handler
+ipcMain.handle('search-app', async (event, query: string, page: number = 0, limit: number = 20, sources: PackageSource[] = ['winget']): Promise<SearchResponse> => {
+  console.log(`Main process received search query: "${query}" (page: ${page}, limit: ${limit}, sources: ${sources.join(',')})`);
+
   if (!query || query.trim().length === 0) {
     console.log('Empty query, returning empty response');
     return { results: [], total: 0 };
   }
 
   try {
-    console.log('Searching WinGet packages...');
-    const wingetResult = await searchWingetPackages(query, page, limit);
-    
-    if (wingetResult.success && wingetResult.data && wingetResult.data.length > 0) {
-      console.log(`WinGet search returned ${wingetResult.data.length} results for page ${page}`);
-      
-      // Get the total from the service result
-      const total = wingetResult.total || wingetResult.data.length;
-      
-      // Convert WinGet packages to SearchResults
-      const resultsWithCommands = wingetResult.data.map(pkg => ({
-        name: pkg.Latest.Name,
-        publisher: pkg.Latest.Publisher,
-        wingetCommand: generateWingetCommand(pkg.Id),
-        officialUrl: pkg.Latest.Homepage,
-        versions: pkg.Versions || [],
-        latestVersion: pkg.Versions && pkg.Versions.length > 0 ? pkg.Versions[0] : undefined,
-        selectedVersion: pkg.Versions && pkg.Versions.length > 0 ? pkg.Versions[0] : undefined,
-        packageId: pkg.Id,
-        description: pkg.Latest.Description,
-        license: pkg.Latest.License,
-        licenseUrl: pkg.Latest.LicenseUrl,
-        tags: pkg.Latest.Tags,
-        homepage: pkg.Latest.Homepage
-      }));
-      
-      console.log('Returning WinGet results:', resultsWithCommands.length);
-      return { results: resultsWithCommands, total };
+    const allResults: SearchResult[] = [];
+    let totalCount = 0;
+
+    // source queue
+    const sourcePromises: { source: PackageSource; promise: Promise<SearchResult[]> }[] = [];
+
+    if (sources.includes('winget')) {
+      sourcePromises.push({
+        source: 'winget',
+        promise: (async () => {
+          const wingetResult = await searchWingetPackages(query, page, limit);
+          if (!wingetResult.success || !wingetResult.data || wingetResult.data.length === 0) return [];
+          totalCount += wingetResult.total || wingetResult.data.length;
+          return wingetResult.data.map(pkg => ({
+            name: pkg.Latest.Name,
+            publisher: pkg.Latest.Publisher,
+            source: 'winget' as const,
+            wingetCommand: generateWingetCommand(pkg.Id),
+            officialUrl: pkg.Latest.Homepage,
+            versions: pkg.Versions || [],
+            latestVersion: pkg.Versions && pkg.Versions.length > 0 ? pkg.Versions[0] : undefined,
+            selectedVersion: pkg.Versions && pkg.Versions.length > 0 ? pkg.Versions[0] : undefined,
+            packageId: pkg.Id,
+            description: pkg.Latest.Description,
+            license: pkg.Latest.License,
+            licenseUrl: pkg.Latest.LicenseUrl,
+            tags: pkg.Latest.Tags,
+            homepage: pkg.Latest.Homepage
+          }));
+        })()
+      });
     }
 
-    console.log('No WinGet results found, falling back to web search...');
-    
-    // Fallback: Generate search links for web results
+    if (sources.includes('chocolatey')) {
+      sourcePromises.push({
+        source: 'chocolatey',
+        promise: (async () => {
+          const chocoResult = await searchChocolateyPackages(query, page, limit);
+          if (!chocoResult.success || !chocoResult.data || chocoResult.data.length === 0) return [];
+          totalCount += chocoResult.total || chocoResult.data.length;
+          return chocoResult.data.map(pkg => ({
+            name: pkg.Title || pkg.Id,
+            publisher: pkg.Authors || 'Unknown',
+            source: 'chocolatey' as const,
+            chocoCommand: generateChocoCommand(pkg.Id),
+            officialUrl: pkg.ProjectUrl || undefined,
+            homepage: pkg.ProjectUrl || undefined,
+            versions: [pkg.Version],
+            latestVersion: pkg.Version,
+            selectedVersion: pkg.Version,
+            packageId: pkg.Id,
+            description: pkg.Description || pkg.Summary,
+            tags: pkg.Tags ? pkg.Tags.split(' ').filter(Boolean) : undefined
+          }));
+        })()
+      });
+    }
+
+    // parallel fetch
+    const settled = await Promise.allSettled(sourcePromises.map(s => s.promise));
+
+    for (let i = 0; i < settled.length; i++) {
+      const result = settled[i];
+      const sourceName = sourcePromises[i].source;
+      if (result.status === 'fulfilled' && result.value.length > 0) {
+        console.log(`${sourceName} returned ${result.value.length} results`);
+        allResults.push(...result.value);
+      } else if (result.status === 'rejected') {
+        console.error(`${sourceName} search failed:`, result.reason);
+      }
+    }
+
+    if (allResults.length > 0) {
+      console.log(`Returning ${allResults.length} combined results`);
+      return { results: allResults, total: totalCount || allResults.length };
+    }
+
+    // fallback to web
+    console.log('No package results found, falling back to web search...');
     const searchLinksResult = await generateSearchLinks(query);
     const fallbackResults: SearchResult[] = [];
 
@@ -177,17 +222,18 @@ ipcMain.handle('search-app', async (event, query: string, page: number = 0, limi
       fallbackResults.push({
         name: `Search for "${query}" online`,
         publisher: 'Web Search',
+        source: 'web',
         searchUrls: searchLinksResult.data
       });
     }
 
-    // Try to find official website
     try {
       const officialSite = await findOfficialWebsite(query);
       if (officialSite.success && officialSite.data) {
         fallbackResults.unshift({
           name: query,
           publisher: 'Official Website',
+          source: 'web',
           officialUrl: officialSite.data
         });
       }
@@ -195,28 +241,29 @@ ipcMain.handle('search-app', async (event, query: string, page: number = 0, limi
       console.log('Could not find official website:', websiteError);
     }
 
-    console.log('Returning fallback results:', fallbackResults.length);
     return { results: fallbackResults, total: fallbackResults.length };
 
   } catch (error) {
     console.error('Search error:', error);
-    
-    // Return search links as fallback
+
     const searchLinksResult = await generateSearchLinks(query);
     if (searchLinksResult.success && searchLinksResult.data) {
-      const fallbackResult = [{
-        name: `Search for "${query}" online`,
-        publisher: 'Web Search',
-        searchUrls: searchLinksResult.data
-      }];
-      return { results: fallbackResult, total: 1 };
+      return {
+        results: [{
+          name: `Search for "${query}" online`,
+          publisher: 'Web Search',
+          source: 'web',
+          searchUrls: searchLinksResult.data
+        }],
+        total: 1
+      };
     }
-    
+
     return { results: [], total: 0 };
   }
 });
 
-// Handle clipboard copy requests
+// copy handler
 ipcMain.handle('copy-to-clipboard', async (event, text: string): Promise<boolean> => {
   try {
     if (!text || typeof text !== 'string') {
@@ -232,12 +279,12 @@ ipcMain.handle('copy-to-clipboard', async (event, text: string): Promise<boolean
   }
 });
 
-// Handle app version requests
+// version info
 ipcMain.handle('get-app-version', async (): Promise<string> => {
   return app.getVersion();
 });
 
-// Handle WinGet command generation for specific versions
+// versioned command handler
 ipcMain.handle('generate-winget-command', async (event, packageId: string, version?: string): Promise<string> => {
   try {
     return generateWingetCommand(packageId, version);
@@ -247,7 +294,7 @@ ipcMain.handle('generate-winget-command', async (event, packageId: string, versi
   }
 });
 
-// Handle winget install command execution
+// installer handler
 ipcMain.handle('execute-winget-install', async (event, command: string): Promise<{ success: boolean; message: string; needsElevation?: boolean }> => {
   if (!command || typeof command !== 'string') {
     return { success: false, message: 'Invalid command provided' };
@@ -259,7 +306,7 @@ ipcMain.handle('execute-winget-install', async (event, command: string): Promise
     // Extract the package ID from the command (e.g., "winget install Discord.Discord")
     const packageId = command.replace('winget install ', '').trim();
     
-    // Try to run winget with elevated privileges
+    // admin powershell spawn
     const wingetProcess = spawn('powershell', [
       '-Command',
       `Start-Process -FilePath "winget" -ArgumentList "install","${packageId}","--silent","--accept-package-agreements","--accept-source-agreements" -Verb RunAs -Wait`
@@ -310,7 +357,7 @@ ipcMain.handle('execute-winget-install', async (event, command: string): Promise
       });
     });
 
-    // Timeout after 60 seconds
+    // 1min timeout
     setTimeout(() => {
       wingetProcess.kill();
       resolve({ 
@@ -321,17 +368,17 @@ ipcMain.handle('execute-winget-install', async (event, command: string): Promise
   });
 });
 
-// Handle renderer ready event
+// ready event
 ipcMain.on('renderer-ready', () => {
   console.log('Renderer process is ready');
 });
 
-// Handle renderer errors
+// error logging
 ipcMain.on('renderer-error', (event, errorInfo) => {
   console.error('Renderer error received:', errorInfo);
 });
 
-// Export installed apps list
+// export handler
 ipcMain.handle('export-installed-apps', async () => {
   try {
     console.log('Starting export of installed apps...');
@@ -394,7 +441,7 @@ ipcMain.handle('export-installed-apps', async () => {
             }
           }
 
-          // Generate single winget command for all apps
+          // bulk command
           const wingetCommand = packageIds.length > 0 
             ? `winget install --accept-package-agreements --accept-source-agreements ${packageIds.join(' ')}`
             : '';
@@ -439,7 +486,7 @@ ipcMain.handle('export-installed-apps', async () => {
   }
 });
 
-// Save export to file
+// save to disk
 ipcMain.handle('save-export-file', async (event, exportData: AppListExport) => {
   try {
     const result = await dialog.showSaveDialog(mainWindow!, {
@@ -472,7 +519,7 @@ ipcMain.handle('save-export-file', async (event, exportData: AppListExport) => {
   }
 });
 
-// Load import file
+// load from disk
 ipcMain.handle('load-import-file', async () => {
   try {
     const result = await dialog.showOpenDialog(mainWindow!, {
@@ -489,7 +536,7 @@ ipcMain.handle('load-import-file', async () => {
       const fileContent = await fs.promises.readFile(filePath, 'utf8');
       const importData: AppListExport = JSON.parse(fileContent);
 
-      // Validate the import data structure
+      // validation
       if (!importData.apps || !Array.isArray(importData.apps) || !importData.wingetCommand) {
         return {
           success: false,
@@ -516,7 +563,7 @@ ipcMain.handle('load-import-file', async () => {
   }
 });
 
-// Execute bulk install from import
+// bulk installer
 ipcMain.handle('execute-bulk-install', async (event, wingetCommand: string) => {
   try {
     console.log('Starting bulk installation...');
@@ -570,7 +617,7 @@ ipcMain.handle('execute-bulk-install', async (event, wingetCommand: string) => {
   }
 });
 
-// Check if WinGet is available
+// availability check
 ipcMain.handle('check-winget-availability', async () => {
   try {
     console.log('Checking WinGet availability...');
@@ -634,7 +681,7 @@ ipcMain.handle('check-winget-availability', async () => {
   }
 });
 
-// Install WinGet using PowerShell
+// installer helper
 ipcMain.handle('install-winget', async () => {
   try {
     console.log('Starting WinGet installation...');
@@ -742,7 +789,7 @@ ipcMain.handle('install-winget', async () => {
   }
 });
 
-// Handle app protocol for deep linking (optional future feature)
+// protocol support
 if (process.defaultApp) {
   if (process.argv.length >= 2) {
     app.setAsDefaultProtocolClient('winhub', process.execPath, [path.resolve(process.argv[1])]);

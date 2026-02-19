@@ -8,18 +8,16 @@ import {
 } from "../utils/ipc";
 import { PackageModal } from "./PackageModal";
 
-/**
- * Individual search result item component
- */
+// result card component
 export const ResultItem: React.FC<ResultItemProps> = ({ result }) => {
   const [isInstalling, setIsInstalling] = useState(false);
   const [installMessage, setInstallMessage] = useState<string | null>(null);
   const [installSuccess, setInstallSuccess] = useState<boolean | null>(null);
   const [selectedVersion, setSelectedVersion] = useState<string>(
-    result.latestVersion || result.versions?.[0] || ""
+    result.latestVersion || result.versions?.[0] || "",
   );
   const [currentCommand, setCurrentCommand] = useState<string>(
-    result.wingetCommand || ""
+    result.wingetCommand || result.chocoCommand || "",
   );
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -30,14 +28,14 @@ export const ResultItem: React.FC<ResultItemProps> = ({ result }) => {
       try {
         const command = await generateWingetCommand(
           result.packageId,
-          version === result.latestVersion ? undefined : version
+          version === result.latestVersion ? undefined : version,
         );
         setCurrentCommand(command);
       } catch (error) {
         console.error("Failed to generate command:", error);
       }
     },
-    [result.packageId, result.latestVersion]
+    [result.packageId, result.latestVersion],
   );
 
   const handleVersionChange = useCallback(
@@ -45,7 +43,7 @@ export const ResultItem: React.FC<ResultItemProps> = ({ result }) => {
       setSelectedVersion(version);
       await updateCommand(version);
     },
-    [updateCommand]
+    [updateCommand],
   );
 
   const handleOpenUrl = (url: string) => {
@@ -66,7 +64,7 @@ export const ResultItem: React.FC<ResultItemProps> = ({ result }) => {
 
       if (installResult.needsElevation) {
         setInstallMessage(
-          "Please allow administrator privileges to continue installation."
+          "Please allow administrator privileges to continue installation.",
         );
       }
     } catch (error) {
@@ -79,7 +77,7 @@ export const ResultItem: React.FC<ResultItemProps> = ({ result }) => {
 
   return (
     <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-sm hover:shadow-md transition-all duration-200">
-      {/* App Header */}
+      {/* app title & info */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1 min-w-0">
           <button
@@ -102,21 +100,25 @@ export const ResultItem: React.FC<ResultItemProps> = ({ result }) => {
           </div>
         </div>
 
-        {/* App Type Badge */}
+        {/* source badge */}
         <div className="ml-4 flex-shrink-0">
-          {result.wingetCommand ? (
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400">
-              WinGet Available
+          {result.source === "winget" ? (
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400">
+              WinGet
+            </span>
+          ) : result.source === "chocolatey" ? (
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-400">
+              Chocolatey
             </span>
           ) : (
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-ubuntu-orange/10 text-ubuntu-orange">
-              Manual Download
+              Web
             </span>
           )}
         </div>
       </div>
 
-      {/* Description */}
+      {/* description */}
       {result.description && (
         <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
           <h4 className="text-sm font-medium text-blue-900 dark:text-blue-300 mb-2">
@@ -128,14 +130,15 @@ export const ResultItem: React.FC<ResultItemProps> = ({ result }) => {
         </div>
       )}
 
-      {/* Installation Options */}
+      {/* install options */}
       <div className="space-y-4">
-        {/* WinGet Command Section */}
-        {result.wingetCommand && (
+        {/* install command */}
+        {(result.wingetCommand || result.chocoCommand) && (
           <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
             <div className="flex items-center justify-between mb-3">
               <h4 className="text-sm font-medium text-gray-900 dark:text-white">
-                Install via WinGet (Recommended)
+                Install via{" "}
+                {result.source === "chocolatey" ? "Chocolatey" : "WinGet"}
               </h4>
               <svg
                 className="w-5 h-5 text-green-500"
@@ -150,7 +153,7 @@ export const ResultItem: React.FC<ResultItemProps> = ({ result }) => {
               </svg>
             </div>
 
-            {/* Version Selection */}
+            {/* version picker */}
             {result.versions && result.versions.length > 1 && (
               <div className="mb-3">
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -182,7 +185,7 @@ export const ResultItem: React.FC<ResultItemProps> = ({ result }) => {
               fullWidth
             />
 
-            {/* Action Buttons */}
+            {/* actions */}
             <div className="mt-3 flex space-x-2">
               <button
                 onClick={handleInstallNow}
@@ -237,7 +240,7 @@ export const ResultItem: React.FC<ResultItemProps> = ({ result }) => {
                 )}
               </button>
 
-              {/* License Button */}
+              {/* license link */}
               {result.licenseUrl && (
                 <button
                   onClick={() => openExternalURL(result.licenseUrl!)}
@@ -262,15 +265,15 @@ export const ResultItem: React.FC<ResultItemProps> = ({ result }) => {
               )}
             </div>
 
-            {/* Installation Status Message */}
+            {/* install status */}
             {installMessage && (
               <div
                 className={`mt-2 p-2 rounded-md text-xs ${
                   installSuccess === true
                     ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-700"
                     : installSuccess === false
-                    ? "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-700"
-                    : "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-700"
+                      ? "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-700"
+                      : "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-700"
                 }`}
               >
                 {installMessage}
@@ -289,7 +292,7 @@ export const ResultItem: React.FC<ResultItemProps> = ({ result }) => {
           </div>
         )}
 
-        {/* Official Website Section */}
+        {/* official site */}
         {result.officialUrl && (
           <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
             <div className="flex items-center justify-between">
@@ -327,7 +330,7 @@ export const ResultItem: React.FC<ResultItemProps> = ({ result }) => {
           </div>
         )}
 
-        {/* Search Engine Links Section */}
+        {/* web searches */}
         {result.searchUrls && result.searchUrls.length > 0 && (
           <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
             <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
@@ -358,7 +361,7 @@ export const ResultItem: React.FC<ResultItemProps> = ({ result }) => {
         )}
       </div>
 
-      {/* Safety Note */}
+      {/* safety note */}
       <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
         <div className="flex items-start space-x-2">
           <svg
@@ -379,7 +382,7 @@ export const ResultItem: React.FC<ResultItemProps> = ({ result }) => {
         </div>
       </div>
 
-      {/* Package Details Modal */}
+      {/* detail modal */}
       <PackageModal
         package={result}
         isOpen={isModalOpen}
@@ -389,16 +392,14 @@ export const ResultItem: React.FC<ResultItemProps> = ({ result }) => {
   );
 };
 
-/**
- * Search engine icon component
- */
+// engine icon helper
 const SearchEngineIcon: React.FC<{ engine: string; className?: string }> = ({
   engine,
   className = "",
 }) => {
   const engineLower = engine.toLowerCase();
 
-  // Return appropriate icon for each search engine
+  // get engine icon
   if (engineLower.includes("google")) {
     return (
       <svg className={className} viewBox="0 0 24 24" fill="currentColor">
@@ -410,7 +411,7 @@ const SearchEngineIcon: React.FC<{ engine: string; className?: string }> = ({
     );
   }
 
-  // Default search icon for other engines
+  // fallback icon
   return (
     <svg
       className={className}
@@ -428,17 +429,15 @@ const SearchEngineIcon: React.FC<{ engine: string; className?: string }> = ({
   );
 };
 
-/**
- * Compact result item for dense layouts
- */
+// dense result card
 export const CompactResultItem: React.FC<ResultItemProps> = ({ result }) => {
   const [isInstalling, setIsInstalling] = useState(false);
   const [installMessage, setInstallMessage] = useState<string | null>(null);
   const [selectedVersion, setSelectedVersion] = useState<string>(
-    result.latestVersion || result.versions?.[0] || ""
+    result.latestVersion || result.versions?.[0] || "",
   );
   const [currentCommand, setCurrentCommand] = useState<string>(
-    result.wingetCommand || ""
+    result.wingetCommand || result.chocoCommand || "",
   );
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -449,14 +448,14 @@ export const CompactResultItem: React.FC<ResultItemProps> = ({ result }) => {
       try {
         const command = await generateWingetCommand(
           result.packageId,
-          version === result.latestVersion ? undefined : version
+          version === result.latestVersion ? undefined : version,
         );
         setCurrentCommand(command);
       } catch (error) {
         console.error("Failed to generate command:", error);
       }
     },
-    [result.packageId, result.latestVersion]
+    [result.packageId, result.latestVersion],
   );
 
   const handleVersionChange = useCallback(
@@ -464,7 +463,7 @@ export const CompactResultItem: React.FC<ResultItemProps> = ({ result }) => {
       setSelectedVersion(version);
       await updateCommand(version);
     },
-    [updateCommand]
+    [updateCommand],
   );
 
   const handleInstallNow = async () => {
@@ -476,13 +475,13 @@ export const CompactResultItem: React.FC<ResultItemProps> = ({ result }) => {
     try {
       const installResult = await executeWingetInstall(currentCommand);
       setInstallMessage(
-        installResult.success ? "Installing..." : installResult.message
+        installResult.success ? "Installing..." : installResult.message,
       );
     } catch (error) {
       setInstallMessage("Failed to start installation");
     } finally {
       setIsInstalling(false);
-      // Clear message after 3 seconds
+      // reset message timer
       setTimeout(() => setInstallMessage(null), 3000);
     }
   };
@@ -502,9 +501,14 @@ export const CompactResultItem: React.FC<ResultItemProps> = ({ result }) => {
                   : result.name}
               </h3>
             </button>
-            {result.wingetCommand && (
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400">
+            {result.source === "winget" && (
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400">
                 WinGet
+              </span>
+            )}
+            {result.source === "chocolatey" && (
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-400">
+                Choco
               </span>
             )}
             {result.latestVersion && (
@@ -517,7 +521,7 @@ export const CompactResultItem: React.FC<ResultItemProps> = ({ result }) => {
             <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
               {result.publisher}
             </p>
-            {/* Version selector for compact view */}
+            {/* compact version selector */}
             {result.versions && result.versions.length > 1 && (
               <select
                 value={selectedVersion}
@@ -541,7 +545,7 @@ export const CompactResultItem: React.FC<ResultItemProps> = ({ result }) => {
         </div>
 
         <div className="ml-3 flex items-center space-x-1.5 flex-shrink-0">
-          {result.wingetCommand && (
+          {(result.wingetCommand || result.chocoCommand) && (
             <>
               {result.officialUrl && (
                 <button
@@ -622,7 +626,7 @@ export const CompactResultItem: React.FC<ResultItemProps> = ({ result }) => {
         </div>
       </div>
 
-      {/* Package Details Modal */}
+      {/* detail modal */}
       <PackageModal
         package={result}
         isOpen={isModalOpen}

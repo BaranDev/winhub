@@ -1,33 +1,56 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
+import { LayoutList, LayoutGrid } from "lucide-react";
 import { SearchBar } from "./components/SearchBar";
 import { ResultsList } from "./components/ResultsList";
 import { AppMigration } from "./components/AppMigration";
 import { useSearch } from "./hooks/useSearch";
 import { isElectronAPIAvailable } from "./utils/ipc";
+import { PackageSource } from "./types";
 import iconImage from "./assets/icon.png";
 import "./App.css";
 
-/**
- * Main WinHub application component with Ubuntu Software Center inspired design
- */
+// main app entry
 const App: React.FC = () => {
-  const { searchState, search, loadMore, clearSearch } = useSearch();
+  const [activeSources, setActiveSources] = useState<PackageSource[]>(() => {
+    const saved = localStorage.getItem("winhub-sources");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch {}
+    }
+    return ["winget"];
+  });
+  const { searchState, search, loadMore, clearSearch } =
+    useSearch(activeSources);
   const [isReady, setIsReady] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
-  const [isDarkMode, setIsDarkMode] = useState(true); // Default to dark mode
-  const [viewMode, setViewMode] = useState<"compact" | "detailed">("compact"); // Default to compact
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const saved = localStorage.getItem("winhub-dark-mode");
+    return saved !== null ? saved === "true" : true;
+  });
+  const [viewMode, setViewMode] = useState<"compact" | "detailed">(() => {
+    const saved = localStorage.getItem("winhub-view-mode");
+    return saved === "detailed" ? "detailed" : "compact";
+  });
   const [showMigration, setShowMigration] = useState(false);
 
-  // Initialize dark mode
+  // sync dark mode class & localstorage
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add("dark");
     } else {
       document.documentElement.classList.remove("dark");
     }
+    localStorage.setItem("winhub-dark-mode", String(isDarkMode));
   }, [isDarkMode]);
 
-  // Check if Electron API is available on mount
+  // sync view mode localstorage
+  useEffect(() => {
+    localStorage.setItem("winhub-view-mode", viewMode);
+  }, [viewMode]);
+
+  // verify ipc bridge is active
   useEffect(() => {
     const checkAPI = () => {
       if (isElectronAPIAvailable()) {
@@ -35,49 +58,65 @@ const App: React.FC = () => {
         setApiError(null);
       } else {
         setApiError(
-          "WinHub services are not available. Please restart the application."
+          "WinHub services are not available. Please restart the application.",
         );
       }
     };
 
-    // Check immediately
+    // check right away
     checkAPI();
 
-    // Also check after a short delay in case API loads asynchronously
+    // retry after 1s if needed
     const timeout = setTimeout(checkAPI, 1000);
 
     return () => clearTimeout(timeout);
   }, []);
 
-  // Handle search input
+  // handle search
   const handleSearch = (query: string) => {
     if (!isReady) return;
     search(query);
   };
 
-  // Handle clear search
+  // handle reset
   const handleClearSearch = () => {
     clearSearch();
   };
 
-  // Handle retry for errors
+  // handle retry
   const handleRetry = () => {
     if (searchState.query) {
       search(searchState.query);
     }
   };
 
-  // Toggle dark mode
+  // toggle theme
   const toggleDarkMode = () => {
     setIsDarkMode(!isDarkMode);
   };
 
-  // Toggle view mode
+  // toggle density
   const toggleViewMode = () => {
     setViewMode(viewMode === "compact" ? "detailed" : "compact");
   };
 
-  // Show API error if not ready
+  // toggle winget/choco sources
+  const toggleSource = useCallback((source: PackageSource) => {
+    setActiveSources((prev) => {
+      let next: PackageSource[];
+      if (prev.includes(source)) {
+        // keep at least one source
+        next = prev.filter((s) => s !== source);
+        if (next.length === 0) return prev;
+      } else {
+        next = [...prev, source];
+      }
+      localStorage.setItem("winhub-sources", JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  // handle service error
   if (!isReady && apiError) {
     return (
       <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center">
@@ -116,7 +155,7 @@ const App: React.FC = () => {
     );
   }
 
-  // Show loading while checking API
+  // initial load state
   if (!isReady) {
     return (
       <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center">
@@ -132,11 +171,11 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
-      {/* Header with Ubuntu-inspired design */}
+      {/* app header */}
       <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 transition-colors duration-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            {/* Logo and Title */}
+            {/* brand */}
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <img
@@ -155,16 +194,16 @@ const App: React.FC = () => {
               </div>
             </div>
 
-            {/* Controls */}
+            {/* header buttons */}
             <div className="flex items-center space-x-4">
-              {/* PC Migration Button */}
+              {/* migration tool */}
               <button
                 onClick={() => setShowMigration(true)}
-                className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-ubuntu-orange border border-ubuntu-orange/40 rounded-lg hover:bg-ubuntu-orange/10 dark:hover:bg-ubuntu-orange/20 transition-colors"
                 title="PC Migration Tool"
               >
                 <svg
-                  className="w-5 h-5"
+                  className="w-4 h-4"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -176,53 +215,10 @@ const App: React.FC = () => {
                     d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12"
                   />
                 </svg>
+                Migrate
               </button>
 
-              {/* View Mode Toggle */}
-              <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
-                <button
-                  onClick={toggleViewMode}
-                  className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
-                    viewMode === "compact"
-                      ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm"
-                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                  }`}
-                >
-                  <svg
-                    className="w-4 h-4"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </button>
-                <button
-                  onClick={toggleViewMode}
-                  className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
-                    viewMode === "detailed"
-                      ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm"
-                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                  }`}
-                >
-                  <svg
-                    className="w-4 h-4"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </button>
-              </div>
-
-              {/* Dark Mode Toggle */}
+              {/* theme toggle */}
               <button
                 onClick={toggleDarkMode}
                 className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
@@ -250,7 +246,7 @@ const App: React.FC = () => {
                 )}
               </button>
 
-              {/* Status Indicator */}
+              {/* app state */}
               <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
                 <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
                 Ready
@@ -260,9 +256,9 @@ const App: React.FC = () => {
         </div>
       </header>
 
-      {/* Main Content */}
+      {/* body */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Search Section - Ubuntu-inspired */}
+        {/* search area */}
         <div className="mb-6">
           <div className="max-w-2xl mx-auto">
             <SearchBar
@@ -274,7 +270,87 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        {/* Results Section */}
+        {/* filters area */}
+        {(searchState.query || searchState.results.length > 0) && (
+          <div className="mb-6 max-w-2xl mx-auto flex items-center justify-between">
+            {/* source selector */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 mr-1">
+                Sources:
+              </span>
+              <button
+                onClick={() => toggleSource("winget")}
+                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all duration-200 border ${
+                  activeSources.includes("winget")
+                    ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                    : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-600 hover:border-blue-400"
+                }`}
+              >
+                <svg
+                  className="w-3 h-3"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+                  <path d="M3 3h8v8H3V3zm10 0h8v8h-8V3zM3 13h8v8H3v-8zm10 0h8v8h-8v-8z" />
+                </svg>
+                WinGet
+              </button>
+              <button
+                onClick={() => toggleSource("chocolatey")}
+                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all duration-200 border ${
+                  activeSources.includes("chocolatey")
+                    ? "bg-amber-600 text-white border-amber-600 shadow-sm"
+                    : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-600 hover:border-amber-400"
+                }`}
+              >
+                <svg
+                  className="w-3 h-3"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                </svg>
+                Chocolatey
+              </button>
+            </div>
+
+            {/* density toggle */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 mr-1">
+                View:
+              </span>
+              <div
+                className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-1"
+                title="Toggle View Mode"
+              >
+                <button
+                  onClick={() => setViewMode("compact")}
+                  className={`flex items-center justify-center p-1.5 rounded-md transition-colors ${
+                    viewMode === "compact"
+                      ? "bg-white dark:bg-gray-600 text-ubuntu-orange shadow-sm"
+                      : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                  }`}
+                  title="Compact View"
+                >
+                  <LayoutList className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setViewMode("detailed")}
+                  className={`flex items-center justify-center p-1.5 rounded-md transition-colors ${
+                    viewMode === "detailed"
+                      ? "bg-white dark:bg-gray-600 text-ubuntu-orange shadow-sm"
+                      : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                  }`}
+                  title="Detailed View"
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* results area */}
         <ResultsList
           results={searchState.results}
           loading={searchState.loading}
@@ -287,7 +363,7 @@ const App: React.FC = () => {
           total={searchState.total}
         />
 
-        {/* Quick Start Guide (shown when no search is active) */}
+        {/* home view */}
         {!searchState.query &&
           !searchState.loading &&
           searchState.results.length === 0 &&
@@ -318,8 +394,8 @@ const App: React.FC = () => {
                   </p>
                 </div>
 
+                {/* guide steps */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                  {/* Step 1 */}
                   <div className="text-center group">
                     <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-105 transition-transform">
                       <svg
@@ -344,7 +420,6 @@ const App: React.FC = () => {
                     </p>
                   </div>
 
-                  {/* Step 2 */}
                   <div className="text-center group">
                     <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-105 transition-transform">
                       <svg
@@ -369,7 +444,6 @@ const App: React.FC = () => {
                     </p>
                   </div>
 
-                  {/* Step 3 */}
                   <div className="text-center group">
                     <div className="w-12 h-12 bg-ubuntu-orange/10 dark:bg-ubuntu-orange/20 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-105 transition-transform">
                       <svg
@@ -395,7 +469,7 @@ const App: React.FC = () => {
                   </div>
                 </div>
 
-                {/* OR Separator */}
+                {/* divider */}
                 <div className="flex items-center justify-center my-6">
                   <div className="flex-1 border-t border-gray-200 dark:border-gray-700"></div>
                   <span className="px-4 text-sm font-medium text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800">
@@ -404,7 +478,7 @@ const App: React.FC = () => {
                   <div className="flex-1 border-t border-gray-200 dark:border-gray-700"></div>
                 </div>
 
-                {/* Quick Install Route */}
+                {/* alternate route */}
                 <div className="text-center">
                   <h4 className="font-semibold text-gray-900 dark:text-white mb-4">
                     Quick Install Route
@@ -414,7 +488,7 @@ const App: React.FC = () => {
                     by selecting Quick Install.
                   </p>
 
-                  {/* Main Flow Steps */}
+                  {/* quick steps */}
                   <div className="flex items-center justify-center space-x-4 mb-6">
                     <div className="flex items-center space-x-2 px-4 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                       <svg
@@ -465,7 +539,7 @@ const App: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* OR Separator */}
+                  {/* divider */}
                   <div className="flex items-center justify-center my-6">
                     <div className="flex-1 border-t border-gray-200 dark:border-gray-700"></div>
                     <span className="px-4 text-sm font-medium text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800">
@@ -474,7 +548,7 @@ const App: React.FC = () => {
                     <div className="flex-1 border-t border-gray-200 dark:border-gray-700"></div>
                   </div>
 
-                  {/* Advanced Option - Compact */}
+                  {/* direct id search */}
                   <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 max-w-lg mx-auto my-6">
                     <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
                       Know the exact package ID?
@@ -498,7 +572,7 @@ const App: React.FC = () => {
                           const input = (
                             e.target as HTMLElement
                           ).parentElement?.querySelector(
-                            "input"
+                            "input",
                           ) as HTMLInputElement;
                           if (input?.value.trim()) {
                             handleSearch(input.value.trim());
@@ -511,7 +585,7 @@ const App: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                {/* Popular Applications */}
+                {/* suggestions */}
                 <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
                   <h4 className="font-semibold text-gray-900 dark:text-white mb-4 text-center">
                     Popular Applications
@@ -544,7 +618,7 @@ const App: React.FC = () => {
           )}
       </main>
 
-      {/* Footer */}
+      {/* footer */}
       <footer className="mt-16 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 transition-colors duration-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
@@ -560,7 +634,7 @@ const App: React.FC = () => {
         </div>
       </footer>
 
-      {/* Migration Modal */}
+      {/* migration modal */}
       {showMigration && (
         <AppMigration onClose={() => setShowMigration(false)} />
       )}

@@ -2,10 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom styles for WinHub */
+/* app styles */
 @layer base {
   html {
-    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    font-family: "Inter", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   body {
@@ -15,17 +17,20 @@
     color: #111827;
   }
 
-  /* Make all images non-selectable */
+  .dark body {
+    background-color: #111827;
+    color: #f9fafb;
+  }
+
+  /* unselectable icons */
   img,
   svg {
     user-select: none;
     -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
     pointer-events: none;
   }
 
-  /* Re-enable pointer events for interactive images if needed */
+  /* interactive elements */
   img[role="button"],
   svg[role="button"],
   .interactive-image,
@@ -35,10 +40,14 @@
 }
 
 @layer components {
-  /* Custom scrollbar */
+  /* scrollbar */
   .custom-scrollbar {
     scrollbar-width: thin;
     scrollbar-color: #d1d5db #f3f4f6;
+  }
+
+  .dark .custom-scrollbar {
+    scrollbar-color: #374151 #1f2937;
   }
 
   .custom-scrollbar::-webkit-scrollbar {
@@ -50,26 +59,38 @@
     border-radius: 3px;
   }
 
+  .dark .custom-scrollbar::-webkit-scrollbar-track {
+    background: #1f2937;
+  }
+
   .custom-scrollbar::-webkit-scrollbar-thumb {
     background: #d1d5db;
     border-radius: 3px;
+  }
+
+  .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #374151;
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: #9ca3af;
   }
 
-  /* Smooth transitions */
+  .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #4b5563;
+  }
+
+  /* animations */
   .smooth-transition {
     transition: all 0.2s ease-in-out;
   }
 
-  /* Focus styles */
+  /* focus */
   .focus-ring {
     @apply focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500;
   }
 
-  /* Button variants */
+  /* buttons */
   .btn-primary {
     @apply inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-primary-600 border border-transparent rounded-lg hover:bg-primary-700 focus-ring disabled:opacity-50 disabled:cursor-not-allowed smooth-transition;
   }
@@ -78,7 +99,7 @@
     @apply inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus-ring disabled:opacity-50 disabled:cursor-not-allowed smooth-transition;
   }
 
-  /* Card styles */
+  /* cards */
   .card {
     @apply bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md smooth-transition;
   }
@@ -87,14 +108,27 @@
     @apply p-4 sm:p-6;
   }
 
-  /* Input styles */
+  /* glass effect */
+  .glass-card {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+
+  .dark .glass-card {
+    background: rgba(31, 41, 55, 0.7);
+    border: 1px solid rgba(75, 85, 99, 0.3);
+  }
+
+  /* inputs */
   .input-primary {
     @apply block w-full px-3 py-2 border border-gray-300 rounded-lg placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 smooth-transition;
   }
 }
 
 @layer utilities {
-  /* Animation utilities */
+  /* transitions */
   .animate-fade-in {
     animation: fadeIn 0.3s ease-in-out;
   }
@@ -107,7 +141,32 @@
     animation: bounceIn 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
   }
 
-  /* Text utilities */
+  .animate-fade-in-up {
+    animation: fadeInUp 0.4s ease-out;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.3s ease-out;
+  }
+
+  /* stagger */
+  .stagger-1 {
+    animation-delay: 0.05s;
+  }
+  .stagger-2 {
+    animation-delay: 0.1s;
+  }
+  .stagger-3 {
+    animation-delay: 0.15s;
+  }
+  .stagger-4 {
+    animation-delay: 0.2s;
+  }
+  .stagger-5 {
+    animation-delay: 0.25s;
+  }
+
+  /* typography */
   .text-balance {
     text-wrap: balance;
   }
@@ -116,12 +175,13 @@
     text-wrap: pretty;
   }
 
-  /* Truncate utilities */
+  /* overflow */
   .truncate-2 {
     overflow: hidden;
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
   }
 
   .truncate-3 {
@@ -129,19 +189,11 @@
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
-  }
-
-  /* Safe area utilities for different platforms */
-  .safe-top {
-    padding-top: env(safe-area-inset-top);
-  }
-
-  .safe-bottom {
-    padding-bottom: env(safe-area-inset-bottom);
+    line-clamp: 3;
   }
 }
 
-/* Keyframe animations */
+/* keyframes */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -159,6 +211,28 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
   }
 }
 
@@ -180,35 +254,19 @@
   }
 }
 
-/* Custom selection color */
+/* text select */
 ::selection {
   background-color: #3b82f6;
   color: white;
 }
 
-::-moz-selection {
-  background-color: #3b82f6;
-  color: white;
-}
-
-/* Focus visible styles for better accessibility */
+/* accessiblity focus */
 *:focus-visible {
   outline: 2px solid #3b82f6;
   outline-offset: 2px;
 }
 
-/* Print styles */
-@media print {
-  .no-print {
-    display: none !important;
-  }
-
-  .print-break-inside-avoid {
-    break-inside: avoid;
-  }
-}
-
-/* Reduced motion preferences */
+/* motion pref */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -220,7 +278,7 @@
   }
 }
 
-/* High contrast mode support */
+/* contrast mode */
 @media (prefers-contrast: high) {
   .card {
     @apply border-2 border-gray-900;
@@ -229,10 +287,4 @@
   .btn-primary {
     @apply border-2 border-gray-900;
   }
-}
-
-/* Dark mode support (if needed in future) */
-@media (prefers-color-scheme: dark) {
-  /* Dark mode styles would go here */
-  /* For now, WinHub uses light theme only */
 }

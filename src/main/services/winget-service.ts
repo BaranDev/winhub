@@ -1,7 +1,7 @@
 import { WingetApiResponse, WingetPackage, ServiceResult } from '../../shared/types';
 const fetch = require('node-fetch');
 
-// Simple in-memory cache for WinGet search results
+// cache winget results in memory
 class WingetCache {
   private cache = new Map<string, { data: WingetPackage[]; timestamp: number }>();
   private readonly TTL = 5 * 60 * 1000; // 5 minutes
@@ -32,13 +32,7 @@ class WingetCache {
 
 const wingetCache = new WingetCache();
 
-/**
- * Searches for packages using the WinGet API
- * @param query - The search query string
- * @param page - The page number (0-based)
- * @param limit - Number of results per page
- * @returns Promise<ServiceResult<WingetPackage[]>>
- */
+// search winget repo
 export async function searchWingetPackages(query: string, page: number = 0, limit: number = 20): Promise<ServiceResult<WingetPackage[]>> {
   if (!query || query.trim().length === 0) {
     return {
@@ -50,7 +44,7 @@ export async function searchWingetPackages(query: string, page: number = 0, limi
   const trimmedQuery = query.trim();
   const cacheKey = `${trimmedQuery}_${page}_${limit}`;
   
-  // Check cache first
+  // query cache
   const cachedResult = wingetCache.get(cacheKey);
   if (cachedResult) {
     return {
@@ -63,8 +57,7 @@ export async function searchWingetPackages(query: string, page: number = 0, limi
     console.log(`Starting WinGet search for: ${trimmedQuery} (page: ${page}, limit: ${limit})`);
     const apiUrl = `https://api.winget.run/v2/packages`;
     
-    // Use correct API parameters: 'take' instead of 'limit', 'page' instead of 'skip'
-    // Max take is 24 according to docs
+    // take/page for paging
     const take = Math.min(limit, 24);
     const searchParams = new URLSearchParams({
       query: trimmedQuery,
@@ -99,7 +92,7 @@ export async function searchWingetPackages(query: string, page: number = 0, limi
       };
     }
 
-    // Process and enhance package data
+    // map to local type
     const packages: WingetPackage[] = apiResponse.Packages.map(pkg => ({
       Id: pkg.Id || '',
       Versions: pkg.Versions || [],
@@ -123,7 +116,7 @@ export async function searchWingetPackages(query: string, page: number = 0, limi
 
     console.log(`WinGet search returned ${packages.length} results for page ${page}`);
     
-    // Cache the results
+    // save to cache
     wingetCache.set(cacheKey, packages);
 
     console.log(`Returning WinGet results: ${packages.length}`);
@@ -161,12 +154,7 @@ export async function searchWingetPackages(query: string, page: number = 0, limi
   }
 }
 
-/**
- * Generates a WinGet install command for a package
- * @param packageId - The WinGet package ID
- * @param version - Optional specific version to install
- * @returns The install command string
- */
+// build install string
 export function generateWingetCommand(packageId: string, version?: string): string {
   if (!packageId || packageId.trim().length === 0) {
     return '';
@@ -181,24 +169,18 @@ export function generateWingetCommand(packageId: string, version?: string): stri
   return baseCommand;
 }
 
-/**
- * Validates if a string is a valid WinGet package ID
- * @param packageId - The package ID to validate
- * @returns boolean
- */
+// validate package id format
 export function isValidPackageId(packageId: string): boolean {
   if (!packageId || typeof packageId !== 'string') {
     return false;
   }
   
-  // Basic validation: package IDs typically contain dots and alphanumeric characters
+  // regex for dots/alphanum
   const packageIdRegex = /^[a-zA-Z0-9\.\-_]+$/;
   return packageIdRegex.test(packageId) && packageId.length > 2;
 }
 
-/**
- * Clears the WinGet search cache
- */
+// empty cache
 export function clearWingetCache(): void {
   wingetCache.clear();
 }

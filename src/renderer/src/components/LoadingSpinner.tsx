@@ -1,9 +1,7 @@
 import React from "react";
 import { LoadingSpinnerProps } from "../types";
 
-/**
- * Loading spinner component with size variants
- */
+// generic spinner
 export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   size = "md",
   className = "",
@@ -36,24 +34,7 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   );
 };
 
-/**
- * Inline loading spinner for buttons or small spaces
- */
-export const InlineSpinner: React.FC<{ className?: string }> = ({
-  className = "",
-}) => (
-  <div
-    className={`inline-block w-4 h-4 animate-spin border-2 border-current border-t-transparent rounded-full ${className}`}
-    role="status"
-    aria-label="Loading"
-  >
-    <span className="sr-only">Loading...</span>
-  </div>
-);
-
-/**
- * Loading spinner with text
- */
+// spinner with label
 export const LoadingSpinnerWithText: React.FC<{
   text?: string;
   size?: "sm" | "md" | "lg";

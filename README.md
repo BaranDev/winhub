@@ -8,11 +8,11 @@ Tired of hunting through sketchy download sites just to install Chrome? WinHub t
 
 ## What is WinHub?
 
-Think of WinHub as your personal software concierge. Instead of playing Russian roulette with random download buttons (you know, the ones surrounded by fake "Download" ads), WinHub connects you directly to Microsoft's official WinGet repository. Search for any Windows application and get the exact command to install it safely - no bloatware, no surprises, no regrets.
+Think of WinHub as your personal software concierge. Instead of playing Russian roulette with random download buttons (you know, the ones surrounded by fake "Download" ads), WinHub connects you directly to Microsoft's official WinGet repository and the Chocolatey Community Repository. Search for any Windows application and get the exact command to install it safely - no bloatware, no surprises, no regrets.
 
 **Why You'll Love It:**
-- **Find Anything Instantly**: Search thousands of verified Windows applications
-- **Zero Trust Issues**: Everything comes from Microsoft's official repository
+- **Find Anything Instantly**: Search thousands of verified Windows applications across multiple sources
+- **Zero Trust Issues**: Everything comes from official repositories (WinGet & Chocolatey)
 - **Version Picker**: Want Chrome 115 instead of the latest? No problem
 - **Package Intel**: See descriptions, licenses, and official websites before installing
 - **PC Migration Magic**: Export your app list from one computer, import on another
@@ -67,6 +67,8 @@ Perfect for when you're too lazy to remember whether Discord's package ID is "Di
 5. **Install**: Drop it in PowerShell and watch the magic happen
 
 **Pro Features:** *(It's free)*
+- **Multi-Source Search**: Toggle between WinGet and Chocolatey sources with a single click.
+- **Smart Fallbacks**: If an app isn't in the repos, WinHub uses a zero-config scraper to find the official download website instantly.
 - **Deep Package Info**: Click any result to see everything - developer, license, official site
 - **Exact Match Search**: Know the package ID? Search directly for instant results
 - **View Options**: Switch between compact and detailed displays
@@ -111,14 +113,11 @@ cd winhub
 # Install dependencies
 npm install
 
-# Package with electron-packager (recommended)
-npm run package
-
-# Alternative: electron-builder portable build
+# Build the portable app using electron-builder
 npm run portable
 ```
 
-The `npm run package` command creates a complete portable package in `release/WinHub-win32-x64/` - perfect for sharing with your team or keeping on a USB drive.
+The `npm run portable` command creates a complete portable package in `release/` - perfect for sharing with your team or keeping on a USB drive.
 
 **What you get:**
 - A packaged WinHub app (~340MB) in a single folder
@@ -154,7 +153,7 @@ This creates a single `WinHub-Standalone.exe` file in the `release/` folder - on
 ## Requirements
 
 - **OS**: Windows 10/11 (64-bit) *- because it's 2025, who's still on Windows 7?*
-- **WinGet**: Microsoft's package manager *(don't have it? WinHub will install it for you automatically)*
+- **WinGet / Chocolatey**: Package managers *(don't have WinGet? WinHub will install it for you automatically)*
 - **Size**: ~340MB (Portable) or ~65MB (Standalone EXE) *- includes everything you need, yes even Chromium*
 - **RAM**: Barely uses any *- seriously, your Discord probably uses more*
 - **Admin Rights**: Only needed if you want WinHub to auto-install WinGet for you

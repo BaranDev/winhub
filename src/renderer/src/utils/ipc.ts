@@ -1,17 +1,9 @@
-import { SearchResult, SearchResponse } from '../types';
+import { SearchResult, SearchResponse, PackageSource } from '../types';
 
-/**
- * IPC communication utilities for the renderer process
- */
+// renderer ipc helpers
 
-/**
- * Search for applications using the main process services
- * @param query - The search query string
- * @param page - The page number (0-based)
- * @param limit - Number of results per page
- * @returns Promise<SearchResponse>
- */
-export async function searchApp(query: string, page: number = 0, limit: number = 20): Promise<SearchResponse> {
+// search via backend
+export async function searchApp(query: string, page: number = 0, limit: number = 20, sources: PackageSource[] = ['winget']): Promise<SearchResponse> {
   try {
     if (!window.electronAPI) {
       throw new Error('Electron API not available');
@@ -21,7 +13,7 @@ export async function searchApp(query: string, page: number = 0, limit: number =
       return { results: [], total: 0 };
     }
 
-    const response = await window.electronAPI.searchApp(query.trim(), page, limit);
+    const response = await window.electronAPI.searchApp(query.trim(), page, limit, sources);
     return response || { results: [], total: 0 };
   } catch (error) {
     console.error('IPC searchApp error:', error);
@@ -29,11 +21,7 @@ export async function searchApp(query: string, page: number = 0, limit: number =
   }
 }
 
-/**
- * Copy text to the system clipboard
- * @param text - The text to copy
- * @returns Promise<boolean> - Success status
- */
+// system copy
 export async function copyToClipboard(text: string): Promise<boolean> {
   try {
     if (!window.electronAPI) {
@@ -52,12 +40,7 @@ export async function copyToClipboard(text: string): Promise<boolean> {
   }
 }
 
-/**
- * Generate a winget command for a specific package and version
- * @param packageId - The package identifier
- * @param version - Optional specific version to install
- * @returns Promise<string> - The generated winget command
- */
+// build command via backend
 export async function generateWingetCommand(packageId: string, version?: string): Promise<string> {
   try {
     if (!window.electronAPI || !window.electronAPI.generateWingetCommand) {
@@ -76,11 +59,7 @@ export async function generateWingetCommand(packageId: string, version?: string)
   }
 }
 
-/**
- * Execute a winget install command
- * @param command - The winget command to execute
- * @returns Promise<{success: boolean; message: string; needsElevation?: boolean}>
- */
+// run winget via backend
 export async function executeWingetInstall(command: string): Promise<{success: boolean; message: string; needsElevation?: boolean}> {
   try {
     if (!window.electronAPI || !window.electronAPI.executeWingetInstall) {
@@ -99,10 +78,7 @@ export async function executeWingetInstall(command: string): Promise<{success: b
   }
 }
 
-/**
- * Check if Electron API is available
- * @returns boolean
- */
+// check api state
 export function isElectronAPIAvailable(): boolean {
   return typeof window !== 'undefined' && 
          typeof window.electronAPI !== 'undefined' &&
@@ -110,11 +86,7 @@ export function isElectronAPIAvailable(): boolean {
          typeof window.electronAPI.copyToClipboard === 'function';
 }
 
-/**
- * Validates a search query
- * @param query - The query to validate
- * @returns boolean
- */
+// validate query
 export function isValidSearchQuery(query: string): boolean {
   if (!query || typeof query !== 'string') {
     return false;
@@ -124,17 +96,13 @@ export function isValidSearchQuery(query: string): boolean {
   return trimmed.length > 0 && trimmed.length <= 100;
 }
 
-/**
- * Sanitizes a search query for safe processing
- * @param query - The query to sanitize
- * @returns string
- */
+// clean query
 export function sanitizeSearchQuery(query: string): string {
   if (!query || typeof query !== 'string') {
     return '';
   }
 
-  // Remove potentially harmful characters and normalize whitespace
+  // remove tags/extra space
   return query
     .trim()
     .replace(/[<>]/g, '') // Remove angle brackets
@@ -142,10 +110,7 @@ export function sanitizeSearchQuery(query: string): string {
     .substring(0, 100); // Limit length
 }
 
-/**
- * Opens an external URL using the system's default browser
- * @param url - The URL to open
- */
+// open web link
 export function openExternalURL(url: string): void {
   if (!url || typeof url !== 'string') {
     console.error('Invalid URL provided to openExternalURL');
@@ -153,8 +118,8 @@ export function openExternalURL(url: string): void {
   }
 
   try {
-    // In Electron, external URLs should be handled by the main process
-    // This is a fallback for development or if main process handling fails
+    // main process handles this
+    // fallback if dev
     if (url.startsWith('http://') || url.startsWith('https://')) {
       window.open(url, '_blank', 'noopener,noreferrer');
     }
@@ -163,18 +128,14 @@ export function openExternalURL(url: string): void {
   }
 }
 
-/**
- * Formats error messages for user display
- * @param error - The error to format
- * @returns string
- */
+// format error for ui
 export function formatErrorMessage(error: unknown): string {
   if (!error) {
     return 'An unknown error occurred';
   }
 
   if (error instanceof Error) {
-    // Common error messages to make more user-friendly
+    // user friendly errors
     if (error.message.includes('Failed to fetch')) {
       return 'Unable to connect to search services. Please check your internet connection.';
     }
@@ -197,12 +158,7 @@ export function formatErrorMessage(error: unknown): string {
   return 'An unexpected error occurred';
 }
 
-/**
- * Debounce function for search input
- * @param func - The function to debounce
- * @param wait - The wait time in milliseconds
- * @returns Debounced function
- */
+// debounce utility
 export function debounce<T extends (...args: any[]) => any>(
   func: T, 
   wait: number
@@ -215,12 +171,7 @@ export function debounce<T extends (...args: any[]) => any>(
   };
 }
 
-/**
- * Throttle function for preventing excessive API calls
- * @param func - The function to throttle
- * @param limit - The time limit in milliseconds
- * @returns Throttled function
- */
+// throttle utility
 export function throttle<T extends (...args: any[]) => any>(
   func: T, 
   limit: number

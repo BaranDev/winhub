@@ -1,4 +1,15 @@
 import React, { useState } from "react";
+import {
+  PackageOpen,
+  AlertTriangle,
+  Zap,
+  Wrench,
+  Store,
+  CheckCircle,
+  ArrowLeft,
+  Copy,
+  Lightbulb,
+} from "lucide-react";
 
 interface WingetInstallerProps {
   onClose: () => void;
@@ -19,7 +30,7 @@ export const WingetInstaller: React.FC<WingetInstallerProps> = ({
     setIsInstalling(true);
     setInstallationStep("installing");
     setStatusMessage(
-      "Starting WinGet installation... This may take a few minutes."
+      "Starting WinGet installation... This may take a few minutes.",
     );
 
     try {
@@ -28,7 +39,7 @@ export const WingetInstaller: React.FC<WingetInstallerProps> = ({
       if (result.success) {
         setInstallationStep("complete");
         setStatusMessage(result.message);
-        // Auto-close after successful installation
+        // close when done
         setTimeout(() => {
           onInstallComplete();
           onClose();
@@ -68,7 +79,7 @@ Remove-Item $output`;
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden">
-        {/* Header */}
+        {/* header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <div>
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -98,7 +109,7 @@ Remove-Item $output`;
           </button>
         </div>
 
-        {/* Content */}
+        {/* steps */}
         <div className="p-6">
           {installationStep === "info" && (
             <div className="space-y-6">
@@ -129,8 +140,9 @@ Remove-Item $output`;
               </div>
 
               <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                <h4 className="font-medium text-blue-800 dark:text-blue-300 mb-2">
-                  📦 What is WinGet?
+                <h4 className="flex items-center gap-2 font-medium text-blue-800 dark:text-blue-300 mb-2">
+                  <PackageOpen className="w-5 h-5 flex-shrink-0" /> What is
+                  WinGet?
                 </h4>
                 <p className="text-sm text-blue-700 dark:text-blue-400">
                   WinGet is Microsoft's official package manager for Windows. It
@@ -144,7 +156,7 @@ Remove-Item $output`;
                   Installation Options:
                 </h4>
 
-                {/* Automatic Installation */}
+                {/* auto install */}
                 <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
                   <div className="flex items-start space-x-3">
                     <div className="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
@@ -153,8 +165,9 @@ Remove-Item $output`;
                       </span>
                     </div>
                     <div className="flex-1">
-                      <h5 className="font-medium text-gray-900 dark:text-white mb-2">
-                        🚀 Automatic Installation (Recommended)
+                      <h5 className="flex items-center gap-2 font-medium text-gray-900 dark:text-white mb-2">
+                        <Zap className="w-5 h-5 text-green-500 flex-shrink-0" />{" "}
+                        Automatic Installation (Recommended)
                       </h5>
                       <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
                         Let WinHub install WinGet automatically. This requires
@@ -171,14 +184,16 @@ Remove-Item $output`;
                             Installing...
                           </span>
                         ) : (
-                          "⚡ Install WinGet Now"
+                          <span className="flex items-center justify-center gap-2">
+                            <Zap className="w-4 h-4" /> Install WinGet Now
+                          </span>
                         )}
                       </button>
                     </div>
                   </div>
                 </div>
 
-                {/* Manual Installation */}
+                {/* manual via command */}
                 <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
                   <div className="flex items-start space-x-3">
                     <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
@@ -187,8 +202,9 @@ Remove-Item $output`;
                       </span>
                     </div>
                     <div className="flex-1">
-                      <h5 className="font-medium text-gray-900 dark:text-white mb-2">
-                        🛠️ Manual Installation
+                      <h5 className="flex items-center gap-2 font-medium text-gray-900 dark:text-white mb-2">
+                        <Wrench className="w-5 h-5 text-blue-500 flex-shrink-0" />{" "}
+                        Manual Installation
                       </h5>
                       <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
                         Copy PowerShell commands to install WinGet manually in
@@ -198,13 +214,16 @@ Remove-Item $output`;
                         onClick={copyManualCommand}
                         className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
                       >
-                        📋 Copy Installation Commands
+                        <span className="flex items-center justify-center gap-2">
+                          <Copy className="w-4 h-4" /> Copy Installation
+                          Commands
+                        </span>
                       </button>
                     </div>
                   </div>
                 </div>
 
-                {/* Microsoft Store Installation */}
+                {/* store link */}
                 <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
                   <div className="flex items-start space-x-3">
                     <div className="w-8 h-8 bg-ubuntu-orange/10 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
@@ -213,8 +232,9 @@ Remove-Item $output`;
                       </span>
                     </div>
                     <div className="flex-1">
-                      <h5 className="font-medium text-gray-900 dark:text-white mb-2">
-                        🏪 Microsoft Store Installation
+                      <h5 className="flex items-center gap-2 font-medium text-gray-900 dark:text-white mb-2">
+                        <Store className="w-5 h-5 text-ubuntu-orange flex-shrink-0" />{" "}
+                        Microsoft Store Installation
                       </h5>
                       <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
                         Install "App Installer" from the Microsoft Store, which
@@ -224,7 +244,9 @@ Remove-Item $output`;
                         href="ms-windows-store://pdp/?productid=9nblggh4nns1"
                         className="inline-block px-4 py-2 bg-ubuntu-orange hover:bg-ubuntu-orange/90 text-white text-sm font-medium rounded-lg transition-colors"
                       >
-                        🏪 Open Microsoft Store
+                        <span className="flex items-center justify-center gap-2">
+                          <Store className="w-4 h-4" /> Open Microsoft Store
+                        </span>
                       </a>
                     </div>
                   </div>
@@ -268,8 +290,9 @@ Remove-Item $output`;
                 </svg>
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                  ✅ Installation Complete!
+                <h3 className="flex items-center justify-center gap-2 text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                  <CheckCircle className="w-5 h-5 text-green-500" />{" "}
+                  Installation Complete!
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400">
                   WinGet has been installed successfully. WinHub will now be
@@ -308,14 +331,16 @@ Remove-Item $output`;
                   onClick={() => setInstallationStep("info")}
                   className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white text-sm font-medium rounded-lg"
                 >
-                  🔙 Back to Options
+                  <span className="flex items-center justify-center gap-2">
+                    <ArrowLeft className="w-4 h-4" /> Back to Options
+                  </span>
                 </button>
               </div>
             </div>
           )}
         </div>
 
-        {/* Status Message */}
+        {/* logs */}
         {statusMessage && (
           <div className="px-6 pb-4">
             <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-3">
@@ -326,15 +351,17 @@ Remove-Item $output`;
           </div>
         )}
 
-        {/* Footer */}
+        {/* footer notes */}
         <div className="bg-gray-50 dark:bg-gray-700/50 px-6 py-4 rounded-b-xl">
           <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
-            <p>
-              💡 <strong>Tip:</strong> WinGet requires Windows 10 1809 or later
+            <p className="flex items-center gap-2">
+              <Lightbulb className="w-4 h-4 text-yellow-500 flex-shrink-0" />{" "}
+              <strong>Tip:</strong> WinGet requires Windows 10 1809 or later
             </p>
-            <p>
-              ⚠️ <strong>Note:</strong> Administrator privileges are required
-              for automatic installation
+            <p className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0" />{" "}
+              <strong>Note:</strong> Administrator privileges are required for
+              automatic installation
             </p>
           </div>
         </div>

@@ -1,19 +1,13 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import { ElectronAPI } from '../shared/types';
+import { ElectronAPI, PackageSource } from '../shared/types';
 
-// Expose protected methods that allow the renderer process to use
-// the ipcRenderer without exposing the entire object
+// expose safe ipc calls to renderer
+// keeps ipcrenderer hidden
 const electronAPI: ElectronAPI = {
-  /**
-   * Search for applications using various services
-   * @param query - The search query string
-   * @param page - The page number (0-based)
-   * @param limit - Number of results per page
-   * @returns Promise with search results
-   */
-  searchApp: async (query: string, page: number = 0, limit: number = 20) => {
+  // search apps via ipc
+  searchApp: async (query: string, page: number = 0, limit: number = 20, sources: PackageSource[] = ['winget']) => {
     try {
-      const result = await ipcRenderer.invoke('search-app', query, page, limit);
+      const result = await ipcRenderer.invoke('search-app', query, page, limit, sources);
       return result;
     } catch (error) {
       console.error('Search IPC error:', error);
@@ -21,11 +15,7 @@ const electronAPI: ElectronAPI = {
     }
   },
 
-  /**
-   * Copy text to system clipboard
-   * @param text - The text to copy
-   * @returns Promise<boolean> - Success status
-   */
+  // copy to clipboard via ipc
   copyToClipboard: async (text: string) => {
     try {
       const result = await ipcRenderer.invoke('copy-to-clipboard', text);
@@ -36,11 +26,7 @@ const electronAPI: ElectronAPI = {
     }
   },
 
-  /**
-   * Execute a winget install command
-   * @param command - The winget command to execute
-   * @returns Promise with installation result
-   */
+  // exec winget install via ipc
   executeWingetInstall: async (command: string) => {
     try {
       const result = await ipcRenderer.invoke('execute-winget-install', command);
@@ -51,10 +37,7 @@ const electronAPI: ElectronAPI = {
     }
   },
 
-  /**
-   * Export installed applications list
-   * @returns Promise with export data
-   */
+  // export app list via ipc
   exportInstalledApps: async () => {
     try {
       const result = await ipcRenderer.invoke('export-installed-apps');
@@ -65,11 +48,7 @@ const electronAPI: ElectronAPI = {
     }
   },
 
-  /**
-   * Save export data to file
-   * @param exportData - The export data to save
-   * @returns Promise with save result
-   */
+  // save export to file via ipc
   saveExportFile: async (exportData: any) => {
     try {
       const result = await ipcRenderer.invoke('save-export-file', exportData);
@@ -80,10 +59,7 @@ const electronAPI: ElectronAPI = {
     }
   },
 
-  /**
-   * Load import file
-   * @returns Promise with import data
-   */
+  // load import from file via ipc
   loadImportFile: async () => {
     try {
       const result = await ipcRenderer.invoke('load-import-file');
@@ -94,11 +70,7 @@ const electronAPI: ElectronAPI = {
     }
   },
 
-  /**
-   * Execute bulk install from import
-   * @param wingetCommand - The bulk winget command to execute
-   * @returns Promise with installation result
-   */
+  // bulk install via ipc
   executeBulkInstall: async (wingetCommand: string) => {
     try {
       const result = await ipcRenderer.invoke('execute-bulk-install', wingetCommand);
@@ -109,10 +81,7 @@ const electronAPI: ElectronAPI = {
     }
   },
 
-  /**
-   * Check if WinGet is available on the system
-   * @returns Promise with availability status
-   */
+  // check if winget exists via ipc
   checkWingetAvailability: async () => {
     try {
       const result = await ipcRenderer.invoke('check-winget-availability');
@@ -123,10 +92,7 @@ const electronAPI: ElectronAPI = {
     }
   },
 
-  /**
-   * Install WinGet using PowerShell
-   * @returns Promise with installation result
-   */
+  // install winget helper via ipc
   installWinget: async () => {
     try {
       const result = await ipcRenderer.invoke('install-winget');
@@ -137,12 +103,7 @@ const electronAPI: ElectronAPI = {
     }
   },
 
-  /**
-   * Generate a winget command for a specific package and version
-   * @param packageId - The package ID
-   * @param version - Optional version to install
-   * @returns Promise with the winget command string
-   */
+  // generate winget command string via ipc
   generateWingetCommand: async (packageId: string, version?: string) => {
     try {
       const result = await ipcRenderer.invoke('generate-winget-command', packageId, version);
@@ -154,9 +115,8 @@ const electronAPI: ElectronAPI = {
   }
 };
 
-// Use `contextBridge` APIs to expose Electron APIs to
-// renderer only if context isolation is enabled, otherwise
-// just add to the DOM global.
+// bridge apis to window.electronapi
+// handle potential isolation disable
 if (process.contextIsolated) {
   try {
     contextBridge.exposeInMainWorld('electronAPI', electronAPI);
@@ -168,7 +128,7 @@ if (process.contextIsolated) {
   (window as any).electronAPI = electronAPI;
 }
 
-// Add event listeners for window events that might be useful
+// window event helpers
 contextBridge.exposeInMainWorld('windowEvents', {
   onDOMReady: (callback: () => void) => {
     if (document.readyState === 'loading') {
@@ -187,7 +147,7 @@ contextBridge.exposeInMainWorld('windowEvents', {
   }
 });
 
-// Expose version info
+// expose versions
 try {
   contextBridge.exposeInMainWorld('versions', {
     node: () => process.versions.node,

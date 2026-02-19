@@ -2,26 +2,26 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
 
-// Get the root element
+// get root
 const container = document.getElementById("root");
 if (!container) {
   throw new Error("Root element not found");
 }
 
-// Create React root
+// init react
 const root = createRoot(container);
 
-// Render the app
+// mount app
 root.render(
   <React.StrictMode>
     <App />
-  </React.StrictMode>
+  </React.StrictMode>,
 );
 
-// Log that the renderer is ready
+// startup log
 console.log("WinHub renderer started successfully");
 
-// Handle any unhandled errors in development
+// dev error logging
 if (process.env.NODE_ENV === "development") {
   window.addEventListener("error", (event) => {
     console.error("Unhandled error:", event.error);
