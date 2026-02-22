@@ -120,7 +120,7 @@ npm run portable
 The `npm run portable` command creates a complete portable package in `release/` - perfect for sharing with your team or keeping on a USB drive.
 
 **What you get:**
-- A packaged WinHub app (~340MB) in a single folder
+- A packaged WinHub app (~70MB) in a single folder
 - A fully functional WinHub app ready to run
 - No installation required - just run it
 - All dependencies bundled inside
@@ -154,7 +154,7 @@ This creates a single `WinHub-Standalone.exe` file in the `release/` folder - on
 
 - **OS**: Windows 10/11 (64-bit) *- because it's 2025, who's still on Windows 7?*
 - **WinGet / Chocolatey**: Package managers *(don't have WinGet? WinHub will install it for you automatically)*
-- **Size**: ~340MB (Portable) or ~65MB (Standalone EXE) *- includes everything you need, yes even Chromium*
+- **Size**: ~70MB (Portable) or ~65MB (Standalone EXE) *- includes everything you need, yes even Chromium*
 - **RAM**: Barely uses any *- seriously, your Discord probably uses more*
 - **Admin Rights**: Only needed if you want WinHub to auto-install WinGet for you
 - **Internet**: For searching packages *(I mean, obviously)*
